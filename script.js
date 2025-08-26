@@ -302,19 +302,10 @@ function initFormHandlers() {
         document.querySelectorAll('input[name="rating"]').forEach(input => input.checked = false);
         showCustomAlert("Thank you for your review! It has been submitted successfully.");
 
-        // Send notification to admin
-        emailjs.send("service_ky2kj3t", "template_24gjzd3", {
-          to_email: adminEmail,
-          to_name: "Admin",
-          from_name: reviewData.user.name,
-          from_email: reviewData.user.email,
-          message: `New ${reviewData.rating}-star review: ${reviewData.review}`,
-          reply_to: reviewData.user.email
-        }).then(function(response) {
-          console.log('Admin notification sent:', response.status);
-        }, function(error) {
-          console.error('Admin notification failed:', error);
-        });
+        // Use notification service for reviews
+        if (window.notificationService) {
+          window.notificationService.handleReviewNotification(reviewData);
+        }
       }).catch((error) => {
         console.error("Error adding review: ", error);
         showCustomAlert("Error submitting review. Please try again.", "error");
@@ -378,32 +369,10 @@ function initFormHandlers() {
       }).then(() => {
         showBookingConfirmation(bookingData);
 
-        // Send notification to admin
-        emailjs.send("service_ky2kj3t", "template_24gjzd3", {
-          to_email: adminEmail,
-          to_name: "Admin",
-          from_name: bookingData.name,
-          from_email: bookingData.email,
-          message: `New booking: ${bookingData.house} for ${bookingData.guests} guests from ${formatDate(bookingData.checkin)} to ${formatDate(bookingData.checkout)}. Contact: ${bookingData.phone}. Preferred check-in time: ${bookingData.preferred_checkin_time || 'Not specified'}`,
-          reply_to: bookingData.email
-        }).then(function(response) {
-          console.log('Admin notification sent:', response.status);
-        }, function(error) {
-          console.error('Admin notification failed:', error);
-        });
-
-        // Send confirmation to guest
-        emailjs.send("service_ky2kj3t", "template_6duvs5n", {
-          to_email: bookingData.email,
-          to_name: bookingData.name,
-          from_name: "Gonah Homes",
-          message: `Thank you for your booking! We have received your request for ${bookingData.house} from ${formatDate(bookingData.checkin)} to ${formatDate(bookingData.checkout)}. We will contact you shortly to confirm your reservation. Please complete payment to M-Pesa: 0799466723 to secure your booking.`,
-          reply_to: "gonahhomes0@gmail.com"
-        }).then(function(response) {
-          console.log('Guest confirmation sent:', response.status);
-        }, function(error) {
-          console.error('Guest confirmation failed:', error);
-        });
+        // Use notification service for booking
+        if (window.notificationService) {
+          window.notificationService.handleBookingNotification(bookingData);
+        }
       }).catch((error) => {
         console.error("Error saving booking: ", error);
         showCustomAlert("Error processing booking. Please try again.", "error");
@@ -446,19 +415,14 @@ function initFormHandlers() {
         showCustomAlert("Thank you for your message! We will get back to you soon.");
         contactForm.reset();
 
-        // Send notification to admin
-        emailjs.send("service_ky2kj3t", "template_24gjzd3", {
-          to_email: adminEmail,
-          to_name: "Admin",
-          from_name: name,
-          from_email: email,
-          message: message,
-          reply_to: email
-        }).then(function(response) {
-          console.log('Admin notification sent:', response.status);
-        }, function(error) {
-          console.error('Admin notification failed:', error);
-        });
+        // Use notification service for contact
+        if (window.notificationService) {
+          window.notificationService.handleContactNotification({
+            name: name,
+            email: email,
+            message: message
+          });
+        }
       }).catch((error) => {
         console.error("Error sending message: ", error);
         showCustomAlert("Error sending message. Please try again.", "error");
@@ -568,78 +532,50 @@ function initNavbarScroll() {
 
 // Slideshow functionality
 let slideIndex = 0;
-const slides = document.querySelectorAll('.slide');
-const indicators = document.querySelectorAll('.indicator');
+let slides = [];
+let indicators = [];
+
+function initSlideElements() {
+  slides = document.querySelectorAll('.slide');
+  indicators = document.querySelectorAll('.indicator');
+}
 
 function showSlide(index) {
+  if (slides.length === 0) return;
+  
   slides.forEach(slide => slide.classList.remove('active'));
   indicators.forEach(indicator => indicator.classList.remove('active'));
 
-  slides[index].classList.add('active');
-  indicators[index].classList.add('active');
+  if (slides[index] && indicators[index]) {
+    slides[index].classList.add('active');
+    indicators[index].classList.add('active');
+  }
 }
 
 function nextSlide() {
+  if (slides.length === 0) return;
   slideIndex = (slideIndex + 1) % slides.length;
   showSlide(slideIndex);
 }
 
 function currentSlide(index) {
+  if (slides.length === 0) return;
   slideIndex = index - 1;
   showSlide(slideIndex);
 }
 
 function initSlideshow() {
+  initSlideElements();
   if (slides.length > 0) {
+    showSlide(0);
     // Auto-advance slides every 5 seconds
     setInterval(nextSlide, 5000);
-  }
-}
-
-// Admin Access Functions
-function openAdminModal() {
-  const modal = document.getElementById('admin-login-modal');
-  if (modal) {
-    modal.style.display = 'flex';
-  }
-}
-
-function closeAdminModal() {
-  const modal = document.getElementById('admin-login-modal');
-  if (modal) {
-    modal.style.display = 'none';
-    document.getElementById('admin-login-form').reset();
-    document.getElementById('admin-login-error').style.display = 'none';
-  }
-}
-
-function handleAdminLogin(e) {
-  e.preventDefault();
-
-  const username = document.getElementById('admin-username').value.trim();
-  const password = document.getElementById('admin-password').value;
-  const errorDiv = document.getElementById('admin-login-error');
-
-  const adminCredentials = {
-    username: 'gonahhomes0@gmail.com',
-    password: 'gonahhomes@0799466723'
-  };
-
-  if (username === adminCredentials.username && password === adminCredentials.password) {
-    closeAdminModal();
-    // Open the admin panel in the same window
-    window.location.href = 'admin.html';
-  } else {
-    errorDiv.textContent = 'Invalid credentials. Please try again.';
-    errorDiv.style.display = 'block';
   }
 }
 
 // Make functions globally available
 window.openBookingModal = openBookingModal;
 window.closeBookingModal = closeBookingModal;
-window.openAdminModal = openAdminModal;
-window.closeAdminModal = closeAdminModal;
 window.scrollToSection = scrollToSection;
 window.currentSlide = currentSlide;
 
@@ -656,34 +592,18 @@ document.addEventListener('DOMContentLoaded', () => {
   initSlideshow();
   initAdminAccess();
 
-  // Initialize EmailJS with your public key
-  emailjs.init("VgDakmh3WscKrr_wQ");
+  // Initialize EmailJS only once
+  if (typeof emailjs !== 'undefined' && !window.emailjsInitialized) {
+    emailjs.init("VgDakmh3WscKrr_wQ");
+    window.emailjsInitialized = true;
+  }
 
   console.log('Gonah Homes website initialized successfully!');
 });
 
 function initAdminAccess() {
-  // Add event listener for admin access button
-  const adminBtn = document.getElementById('admin-access-btn');
-  if (adminBtn) {
-    adminBtn.addEventListener('click', openAdminModal);
-  }
-
-  // Add event listener for admin login form
-  const adminForm = document.getElementById('admin-login-form');
-  if (adminForm) {
-    adminForm.addEventListener('submit', handleAdminLogin);
-  }
-
-  // Close modal when clicking outside
-  const adminModal = document.getElementById('admin-login-modal');
-  if (adminModal) {
-    adminModal.addEventListener('click', (e) => {
-      if (e.target === adminModal) {
-        closeAdminModal();
-      }
-    });
-  }
+  // Admin access is now handled by direct link in HTML
+  // No authentication modal needed on frontend
 }
 
 // Custom Alert Function
@@ -743,67 +663,9 @@ function showCustomAlert(message, type = "success") {
 
 
 
-// Function to add offers to the slideshow
-function addOffersToSlideshow() {
-  // Assuming 'offers' is a collection in Firestore containing offer details
-  db.collection("offers").get().then((querySnapshot) => {
-    const slidesContainer = document.getElementById('slideshow-container'); // Assuming this exists in your HTML
-    if (!slidesContainer) {
-      console.error("Slideshow container not found.");
-      return;
-    }
-
-    querySnapshot.forEach((doc) => {
-      const offer = doc.data();
-      if (offer.imageUrl && offer.title) {
-        const slideDiv = document.createElement('div');
-        slideDiv.classList.add('slide');
-        slideDiv.innerHTML = `
-          <img src="${offer.imageUrl}" alt="${offer.title}">
-          <div class="slide-content">
-            <h2>${offer.title}</h2>
-            ${offer.description ? `<p>${offer.description}</p>` : ''}
-            ${offer.link ? `<a href="${offer.link}" class="btn btn-primary">Learn More</a>` : ''}
-          </div>
-        `;
-        slidesContainer.appendChild(slideDiv);
-      }
-    });
-
-    // Re-initialize slideshow with new slides if any were added
-    // Ensure this logic correctly handles the initial slides and added offers
-    // For simplicity, this might need a more robust way to manage initial vs dynamic slides
-    if (slidesContainer.children.length > 0) {
-      // If you have initial slides, make sure this doesn't break them.
-      // You might need to adjust `initSlideshow` or how `slides` and `indicators` are selected.
-      // For now, let's assume the initial setup handles the first few slides and this adds more.
-      // A better approach would be to dynamically create indicators too if needed.
-      console.log("Offers loaded into slideshow.");
-      // If the slideshow was already initialized, it might not pick up these new slides automatically.
-      // Re-initialization or a more dynamic slide management would be needed.
-      // For this example, we'll just log that they've been added.
-    }
-  }).catch((error) => {
-    console.error("Error fetching offers:", error);
-  });
+// Admin access - direct link to management dashboard
+function initAdminAccess() {
+  // Admin access is now handled by direct link in HTML
+  // No authentication modal needed on frontend
 }
 
-// Call this function after DOMContentLoaded or when you want to load offers
-// Example: Add it to the DOMContentLoaded listener if offers should load on page load.
-// document.addEventListener('DOMContentLoaded', () => { ... initSlideshow(); addOffersToSlideshow(); ... });
-// For now, it's defined but not called automatically to avoid conflicts with existing slideshow setup.
-
-// Ensure the admin access button links to the backend correctly
-function updateAdminLink() {
-  const adminLink = document.getElementById('admin-link'); // Assuming an element with id 'admin-link' exists in your footer
-  if (adminLink) {
-    // Create a link that might look like a lock icon, or just the text with a lock icon
-    adminLink.innerHTML = '<i class="fas fa-lock"></i> Admin Access';
-    // The actual navigation is handled by the admin login modal and its handling
-    adminLink.onclick = openAdminModal; // Make it trigger the modal
-    adminLink.style.cursor = 'pointer'; // Indicate it's clickable
-  }
-}
-
-// Call this function on DOMContentLoaded to update the link
-// document.addEventListener('DOMContentLoaded', () => { ... updateAdminLink(); ... });
