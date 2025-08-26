@@ -1,4 +1,5 @@
 /* CSS Reset and Base Styles */
+/* CSS Reset and Base Styles */
 * {
   margin: 0;
   padding: 0;
@@ -792,17 +793,32 @@ section {
 .input-group {
   display: flex;
   gap: 0.5rem;
-  align-items: stretch;
+  align-items: flex-end;
 }
 
 .input-group input {
-  flex: 1 1 0;
-  min-width: 0;
+  flex: 1;
 }
 
 .input-group .btn {
-  flex: 0 0 auto;
+  width: auto;
+  min-width: 100px;
+  text-align: center;
+  white-space: nowrap;
+  padding: 0.8em 1.2em;
 }
+
+/* Custom CSS for Review Continue Button */
+.review-continue-btn {
+  width: auto; /* Adjust width as needed */
+  padding: 12px 24px; /* Maintain original padding */
+  text-align: center; /* Center the text */
+  display: inline-flex; /* Use flex to center content */
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
 
 @media (max-width: 600px) {
   .review-form-container,
@@ -949,11 +965,20 @@ section {
   box-shadow: var(--shadow-light);
 }
 
+.contact-form .btn {
+  width: 100%;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
 /* Footer */
 .footer {
-  background: var(--text-dark);
+  background: var(--primary-color);
   color: white;
-  padding: 3rem 0 1rem;
+  padding: 2rem 0 1rem;
 }
 
 .footer-content {
@@ -1000,6 +1025,23 @@ section {
   padding-top: 2rem;
   border-top: 1px solid #333;
   color: rgba(255,255,255,0.6);
+}
+
+.social-links {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.social-links a {
+  color: white;
+  font-size: 1.5rem;
+  transition: color 0.3s;
+}
+
+.social-links a:hover {
+  color: var(--accent-color);
 }
 
 /* Modal Styles */
@@ -1493,4 +1535,4 @@ section {
     max-width: none;
     padding: 0;
   }
-  }
+             }
