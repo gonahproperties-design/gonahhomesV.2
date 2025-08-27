@@ -37,6 +37,27 @@
   <section id="hero" class="hero">
     <div class="hero-slideshow">
       <div class="slide active">
+        <img src="https://images.unsplash.com/photo-1571624436279-b272aff752b5?w=1920&h=1080&fit=crop" alt="Luxury accommodation">
+        <div class="slide-content">
+          <h2>Welcome to Gonah Homes</h2>
+          <p>Experience luxury and comfort in our premium accommodations</p>
+        </div>
+      </div>
+        <div class="slide">
+          <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=1920&h=1080&fit=crop" alt="Modern apartment">
+          <div class="slide-content">
+            <h2>Modern Living Spaces</h2>
+            <p>Fully furnished apartments with all modern amenities</p>
+          </div>
+        </div>
+        <div class="slide">
+          <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80" alt="Comfortable stay">
+          <div class="slide-content">
+            <h2>Your Home Away From Home</h2>
+            <p>Perfect for business trips, vacations, and extended stays</p>
+          </div>
+        </div>
+      <div class="slide">
         <img src="https://images.unsplash.com/photo-1571624436279-b272aff752b5?w=1920&h=1080&fit=crop" alt="Luxury Beachfront House">
       </div>
       <div class="slide">
@@ -199,7 +220,7 @@
 
         <div class="accommodation-card">
           <div class="card-image">
-            <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d986688?w=400&h=300&fit=crop" alt="One Bedroom" />
+            <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=400&h=300&fit=crop" alt="One Bedroom Apartment" />
           </div>
           <div class="card-content">
             <h3>One Bedroom Apartment</h3>
@@ -268,7 +289,7 @@
 
         <div class="accommodation-card">
           <div class="card-image">
-            <img src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400&h=300&fit=crop" alt="Four Bedroom" />
+            <img src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&q=80" alt="Four Bedroom" />
           </div>
           <div class="card-content">
             <h3>Four Bedroom Apartment</h3>
@@ -291,7 +312,7 @@
 
         <div class="accommodation-card featured">
           <div class="card-image">
-            <img src="https://images.unsplash.com/photo-1571624436279-b272aff752b5?w=400&h=300&fit=crop" alt="Maisonette" />
+            <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&q=80" alt="Maisonette">
             <div class="card-badge">Premium</div>
           </div>
           <div class="card-content">
@@ -503,42 +524,23 @@
         </div>
       </div>
       <div class="footer-bottom">
-        <p>&copy; 2025 Gonah Homes. All rights reserved. | <a href="backend/dashboard.html" target="_blank" id="admin-access-btn" style="color: #800000; text-decoration: underline; font-size: 0.8em; display: inline-flex; align-items: center; gap: 0.3rem;"><i class="fas fa-lock"></i> Admin</a></p>
+        <div class="social-links">
+          <a href="https://twitter.com/gonahhomes" target="_blank" aria-label="Twitter">
+            <i class="fab fa-twitter"></i>
+          </a>
+          <a href="https://facebook.com/gonahhomes" target="_blank" aria-label="Facebook">
+            <i class="fab fa-facebook"></i>
+          </a>
+          <a href="https://tiktok.com/@gonahhomes" target="_blank" aria-label="TikTok">
+            <i class="fab fa-tiktok"></i>
+          </a>
+        </div>
+        <p>&copy; 2025 Gonah Homes. All rights reserved. | <a href="backend/dashboard.html" target="_blank" style="color: #800000; text-decoration: underline; font-size: 0.8em; display: inline-flex; align-items: center; gap: 0.3rem;"><i class="fas fa-lock"></i> Management</a></p>
       </div>
     </div>
   </footer>
 
-  <!-- Admin Login Modal -->
-  <div id="admin-login-modal" class="modal-backdrop" style="display: none;">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>Admin Login</h3>
-        <button class="modal-close" onclick="closeAdminModal()">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      <div class="modal-body">
-        <form id="admin-login-form">
-          <div class="form-group">
-            <label for="admin-username">
-              <i class="fas fa-user"></i> Username/Email
-            </label>
-            <input type="email" id="admin-username" required placeholder="gonahhomes0@gmail.com">
-          </div>
-          <div class="form-group">
-            <label for="admin-password">
-              <i class="fas fa-lock"></i> Password
-            </label>
-            <input type="password" id="admin-password" required>
-          </div>
-          <div id="admin-login-error" class="error-message" style="color: red; font-size: 0.9em; margin: 0.5rem 0; display: none;"></div>
-          <button type="submit" class="btn btn-primary btn-full">
-            <i class="fas fa-sign-in-alt"></i> Access Dashboard
-          </button>
-        </form>
-      </div>
-    </div>
-  </div>
+  
 
   <!-- Booking Modal -->
   <div id="booking-modal-bg" class="modal-backdrop">
@@ -692,7 +694,7 @@
         })
         .catch(err => console.error("Booking error:", err));
     } 
-    
+
     else if (form.id === "review-form") {
       formData = {
         client_name: form.review_name.value,
@@ -708,7 +710,7 @@
         })
         .catch(err => console.error("Review error:", err));
     } 
-    
+
     else if (form.id === "contact-form") {
       formData = {
         client_name: form.client_name.value,
@@ -732,4 +734,4 @@
   document.getElementById("contact-form")?.addEventListener("submit", sendEmail);
 </script>
 </body>
-  </html>
+                                                             </html>
