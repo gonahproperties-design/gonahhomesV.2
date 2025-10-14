@@ -9,6 +9,9 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<!-- Flatpickr CSS & JS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 </head>
 <body>
   <!-- Navigation Header -->
@@ -603,7 +606,7 @@
               <label for="booking-checkin">
                 <i class="fas fa-calendar"></i> Check-In Date
               </label>
-              <input type="date" id="booking-checkin" name="checkin" required>
+              <input type="text" id="booking-checkin" name="checkin" required>
             </div>
             <div class="form-group">
               <label for="booking-preferred-time">
@@ -617,7 +620,7 @@
             <label for="booking-checkout">
               <i class="fas fa-calendar"></i> Check-Out Date
             </label>
-            <input type="date" id="booking-checkout" name="checkout" required>
+            <input type="text" id="booking-checkout" name="checkout" required>
           </div>
 
           <div class="form-group">
