@@ -76,6 +76,11 @@ function openBookingModal(house) {
     form.style.display = 'block';
     confirmDiv.style.display = 'none';
     form.reset();
+    //Call Flatpickr setup when modal opens
+  if (window.bookedDates && window.bookedDates.length) {
+    setupDatePickers(window.bookedDates);
+  }
+  }
 
     // Set minimum dates to today
     const today = new Date().toISOString().split('T')[0];
