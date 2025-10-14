@@ -713,6 +713,23 @@ function showCustomAlert(message, type = "success") {
     alertBox.remove();
   }, 5000);
 }
+// Fetch all booked dates from Firestore
+async function getBookedDates() {
+  const querySnapshot = await db.collection("bookings").get();
+  const bookedDates = [];
+
+  querySnapshot.forEach((doc) => {
+    const data = doc.data();
+    if (data.checkin && data.checkout) {
+      bookedDates.push({
+        checkIn: data.checkin,
+        checkOut: data.checkout
+      });
+    }
+  });
+
+  return bookedDates;
+}
 // Load booked dates when site loads
 getBookedDates().then(bookedDates => {
   window.bookedDates = bookedDates; // ✅ make globally available
