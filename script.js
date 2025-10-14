@@ -713,6 +713,11 @@ function showCustomAlert(message, type = "success") {
     alertBox.remove();
   }, 5000);
 }
+// Load booked dates when site loads
+getBookedDates().then(bookedDates => {
+  window.bookedDates = bookedDates; // ✅ make globally available
+  console.log("Booked dates loaded:", bookedDates);
+});
 
 
 
