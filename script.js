@@ -317,8 +317,7 @@ function initFormHandlers() {
   }
 
   // Booking form
-  // 🔹 Gonah Homes Booking Script with Date Blocking
-
+  // 🏠 Gonah Homes Booking Script (Fixed Version)
 const bookingForm = document.getElementById('booking-form');
 
 if (bookingForm) {
@@ -328,9 +327,14 @@ if (bookingForm) {
     const formData = new FormData(bookingForm);
     const bookingData = Object.fromEntries(formData.entries());
 
-    // Validation
+    // ✅ Auto-fill accommodation field if available
+    bookingData.accommodationId = document.getElementById('booking-house')?.value || '';
+    bookingData.houseName = bookingData.accommodationId || 'Unspecified';
+
+    // --- Validation ---
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+
     const checkinDate = new Date(bookingData.checkin);
     const checkoutDate = new Date(bookingData.checkout);
 
@@ -350,44 +354,36 @@ if (bookingForm) {
       return;
     }
 
-    // Ensure at least one night stay
-    const timeDiff = checkoutDate.getTime() - checkinDate.getTime();
-    const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+    // At least one night stay
+    const daysDiff = Math.ceil((checkoutDate - checkinDate) / (1000 * 3600 * 24));
     if (daysDiff < 1) {
       showCustomAlert("Minimum stay is one night.", "error");
       return;
     }
 
-    // Show loading state
+    // --- Loading state ---
     const submitBtn = bookingForm.querySelector('[type="submit"]');
     const originalText = submitBtn.innerHTML;
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
     submitBtn.disabled = true;
 
     try {
-      // 🏠 STEP 1: Identify accommodation
-      const accommodationId = bookingData.accommodationId || bookingData.houseName;
+      const accommodationId = bookingData.accommodationId;
       if (!accommodationId) {
-        showCustomAlert("Missing accommodation information.", "error");
+        showCustomAlert("Missing accommodation information. Please select a house again.", "error");
         submitBtn.innerHTML = originalText;
         submitBtn.disabled = false;
         return;
       }
 
-      // 🗓️ STEP 2: Check if selected dates are already booked
+      // 🔍 Check for booked dates
       const accRef = db.collection("accommodations").doc(accommodationId);
       const accSnap = await accRef.get();
+      const existingDates = accSnap.exists ? accSnap.data().bookedDates || [] : [];
 
-      let existingDates = [];
-      if (accSnap.exists) {
-        existingDates = accSnap.data().bookedDates || [];
-      }
-
-      // Helper: get all dates between check-in & check-out
       const newDates = getDatesInRange(bookingData.checkin, bookingData.checkout);
-
-      // Compare for overlaps
       const conflict = newDates.some(date => existingDates.includes(date));
+
       if (conflict) {
         showCustomAlert("Some of the selected dates are already booked. Please choose different dates.", "error");
         submitBtn.innerHTML = originalText;
@@ -395,18 +391,18 @@ if (bookingForm) {
         return;
       }
 
-      // ✅ STEP 3: Save booking in Firestore
+      // ✅ Save booking
       await db.collection("bookings").add({
         ...bookingData,
         timestamp: firebase.firestore.FieldValue.serverTimestamp(),
         status: 'pending'
       });
 
-      // 🧱 STEP 4: Update accommodation document with newly booked dates
+      // Update booked dates for this accommodation
       const updatedDates = [...new Set([...existingDates, ...newDates])];
       await accRef.set({ bookedDates: updatedDates }, { merge: true });
 
-      // 🥳 STEP 5: Confirmation + notification
+      // ✅ Success
       showBookingConfirmation(bookingData);
 
       if (window.notificationService) {
@@ -414,25 +410,24 @@ if (bookingForm) {
       }
 
     } catch (error) {
-      console.error("Error saving booking: ", error);
+      console.error("Error saving booking:", error);
       showCustomAlert("Error processing booking. Please try again.", "error");
     } finally {
-      // Reset button
       submitBtn.innerHTML = originalText;
       submitBtn.disabled = false;
     }
   });
 }
 
-// 🔹 Helper Function: Get all dates between two dates
+// 🔹 Helper Function: Generate all dates in a range
 function getDatesInRange(start, end) {
   const dateArray = [];
-  let currentDate = new Date(start);
-  const stopDate = new Date(end);
+  let current = new Date(start);
+  const stop = new Date(end);
 
-  while (currentDate <= stopDate) {
-    dateArray.push(currentDate.toISOString().split('T')[0]);
-    currentDate.setDate(currentDate.getDate() + 1);
+  while (current <= stop) {
+    dateArray.push(current.toISOString().split('T')[0]);
+    current.setDate(current.getDate() + 1);
   }
   return dateArray;
 }
