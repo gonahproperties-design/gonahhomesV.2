@@ -140,86 +140,6 @@ function hideUserInfo() {
   }
 }
 
-// ==============================
-// FETCH BOOKED DATES FROM FIREBASE
-// ==============================
-async function getBookedDates() {
-  const querySnapshot = await db.collection("bookings").get();
-  const bookedDates = [];
-
-  querySnapshot.forEach((doc) => {
-    const data = doc.data();
-    if (data.checkin && data.checkout) {
-      bookedDates.push({
-        checkIn: data.checkin,
-        checkOut: data.checkout
-      });
-    }
-  });
-
-  return bookedDates;
-}
-
-// ==============================
-// SETUP FLATPICKR DATE PICKERS
-// ==============================
-function setupDatePickers(bookedDates) {
-  const checkinInput = document.getElementById('booking-checkin');
-  const checkoutInput = document.getElementById('booking-checkout');
-
-  if (!checkinInput || !checkoutInput) return;
-
-  // Turn booked date ranges into Flatpickr disable ranges
-  const disabledRanges = bookedDates.map(b => ({
-    from: b.checkIn,
-    to: b.checkOut
-  }));
-
-  // Initialize the check-in picker
-  const checkinPicker = flatpickr(checkinInput, {
-    dateFormat: "Y-m-d",
-    minDate: "today",
-    disable: disabledRanges,
-    onDayCreate: function(dObj, dStr, fp, dayElem) {
-      const dateStr = dayElem.dateObj.toISOString().split('T')[0];
-      disabledRanges.forEach(range => {
-        if (dateStr >= range.from && dateStr <= range.to) {
-          dayElem.innerHTML = `<span class="booked-day">Booked</span>`;
-        }
-      });
-    },
-    onChange: function(selectedDates) {
-      if (selectedDates.length) {
-        checkoutPicker.set('minDate', selectedDates[0]);
-      }
-    }
-  });
-
-  // Initialize the check-out picker
-  const checkoutPicker = flatpickr(checkoutInput, {
-    dateFormat: "Y-m-d",
-    minDate: "today",
-    disable: disabledRanges,
-    onDayCreate: function(dObj, dStr, fp, dayElem) {
-      const dateStr = dayElem.dateObj.toISOString().split('T')[0];
-      disabledRanges.forEach(range => {
-        if (dateStr >= range.from && dateStr <= range.to) {
-          dayElem.innerHTML = `<span class="booked-day">Booked</span>`;
-        }
-      });
-    }
-  });
-}
-
-// ==============================
-// LOAD BOOKED DATES ON PAGE LOAD
-// ==============================
-getBookedDates().then(bookedDates => {
-  window.bookedDates = bookedDates; // ✅ make it global
-  console.log("Booked dates loaded:", bookedDates);
-});
-}
-
 function renderTestimonials(reviews) {
   const testimonialsGrid = document.getElementById('testimonials-grid');
   if (!testimonialsGrid) return;
@@ -230,7 +150,7 @@ function renderTestimonials(reviews) {
         <div class="testimonial-rating">
           <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
         </div>
-        <p class="testimonial-text">"Amazing experience! The apartment was spoifully furnished, and the location was perfect. Will definitely book again!"</p>
+        <p class="testimonial-text">"Amazing experience! The apartment was spotless, beautifully furnished, and the location was perfect. Will definitely book again!"</p>
         <div class="testimonial-author">
           <img src="https://images.unsplash.com/photo-1494790108755-2616b612b577?w=100&h=100&fit=crop&crop=face" alt="Sarah Johnson" class="author-avatar">
           <div class="author-info">
@@ -402,73 +322,119 @@ function initFormHandlers() {
   }
 
   // Booking form
-  Booking form
+  // 🏠 Gonah Homes Booking Script (Fixed Version)
 const bookingForm = document.getElementById('booking-form');
+
 if (bookingForm) {
-bookingForm.addEventListener('submit', (e) => {
-e.preventDefault();
+  bookingForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
 
-const formData = new FormData(bookingForm);  
-  const bookingData = Object.fromEntries(formData.entries());  
+    const formData = new FormData(bookingForm);
+    const bookingData = Object.fromEntries(formData.entries());
 
-  // Validation  
-  const today = new Date();  
-  today.setHours(0, 0, 0, 0);  
-  const checkinDate = new Date(bookingData.checkin);  
-  const checkoutDate = new Date(bookingData.checkout);  
+    // ✅ Auto-fill accommodation field if available
+    bookingData.accommodationId = document.getElementById('booking-house')?.value || '';
+    bookingData.houseName = bookingData.accommodationId || 'Unspecified';
 
-  if (!bookingData.name || !bookingData.guests || !bookingData.checkin ||  
-      !bookingData.checkout || !bookingData.phone || !bookingData.email) {  
-    showCustomAlert("Please fill all required booking fields.", "error");  
-    return;  
-  }  
+    // --- Validation ---
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-  if (checkinDate < today) {  
-    showCustomAlert("Check-in date cannot be in the past.", "error");  
-    return;  
-  }  
+    const checkinDate = new Date(bookingData.checkin);
+    const checkoutDate = new Date(bookingData.checkout);
 
-  if (checkoutDate <= checkinDate) {  
-    showCustomAlert("Check-out date must be after check-in date.", "error");  
-    return;  
-  }  
+    if (!bookingData.name || !bookingData.guests || !bookingData.checkin ||
+        !bookingData.checkout || !bookingData.phone || !bookingData.email) {
+      showCustomAlert("Please fill all required booking fields.", "error");
+      return;
+    }
 
-  // Ensure at least one night stay  
-  const timeDiff = checkoutDate.getTime() - checkinDate.getTime();  
-  const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));  
-  if (daysDiff < 1) {  
-    showCustomAlert("Minimum stay is one night.", "error");  
-    return;  
-  }  
+    if (checkinDate < today) {
+      showCustomAlert("Check-in date cannot be in the past.", "error");
+      return;
+    }
 
-  // Show loading state  
-  const submitBtn = bookingForm.querySelector('[type="submit"]');  
-  const originalText = submitBtn.innerHTML;  
-  submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';  
-  submitBtn.disabled = true;  
+    if (checkoutDate <= checkinDate) {
+      showCustomAlert("Check-out date must be after check-in date.", "error");
+      return;
+    }
 
-  // Save booking to database  
-  db.collection("bookings").add({  
-    ...bookingData,  
-    timestamp: firebase.firestore.FieldValue.serverTimestamp(),  
-    status: 'pending'  
-  }).then(() => {  
-    showBookingConfirmation(bookingData);  
+    // At least one night stay
+    const daysDiff = Math.ceil((checkoutDate - checkinDate) / (1000 * 3600 * 24));
+    if (daysDiff < 1) {
+      showCustomAlert("Minimum stay is one night.", "error");
+      return;
+    }
 
-    // Use notification service for booking  
-    if (window.notificationService) {  
-      window.notificationService.handleBookingNotification(bookingData);  
-    }  
-  }).catch((error) => {  
-    console.error("Error saving booking: ", error);  
-    showCustomAlert("Error processing booking. Please try again.", "error");  
-  }).finally(() => {  
-    submitBtn.innerHTML = originalText;  
-    submitBtn.disabled = false;  
-  });  
-});
+    // --- Loading state ---
+    const submitBtn = bookingForm.querySelector('[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+    submitBtn.disabled = true;
 
+    try {
+      const accommodationId = bookingData.accommodationId;
+      if (!accommodationId) {
+        showCustomAlert("Missing accommodation information. Please select a house again.", "error");
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+        return;
+      }
+
+      // 🔍 Check for booked dates
+      const accRef = db.collection("accommodations").doc(accommodationId);
+      const accSnap = await accRef.get();
+      const existingDates = accSnap.exists ? accSnap.data().bookedDates || [] : [];
+
+      const newDates = getDatesInRange(bookingData.checkin, bookingData.checkout);
+      const conflict = newDates.some(date => existingDates.includes(date));
+
+      if (conflict) {
+        showCustomAlert("Some of the selected dates are already booked. Please choose different dates.", "error");
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+        return;
+      }
+
+      // ✅ Save booking
+      await db.collection("bookings").add({
+        ...bookingData,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        status: 'pending'
+      });
+
+      // Update booked dates for this accommodation
+      const updatedDates = [...new Set([...existingDates, ...newDates])];
+      await accRef.set({ bookedDates: updatedDates }, { merge: true });
+
+      // ✅ Success
+      showBookingConfirmation(bookingData);
+
+      if (window.notificationService) {
+        window.notificationService.handleBookingNotification(bookingData);
+      }
+
+    } catch (error) {
+      console.error("Error saving booking:", error);
+      showCustomAlert("Error processing booking. Please try again.", "error");
+    } finally {
+      submitBtn.innerHTML = originalText;
+      submitBtn.disabled = false;
+    }
+  });
 }
+
+// 🔹 Helper Function: Generate all dates in a range
+function getDatesInRange(start, end) {
+  const dateArray = [];
+  let current = new Date(start);
+  const stop = new Date(end);
+
+  while (current <= stop) {
+    dateArray.push(current.toISOString().split('T')[0]);
+    current.setDate(current.getDate() + 1);
+  }
+  return dateArray;
 }
   // Contact form
   const contactForm = document.getElementById('contact-form');
@@ -747,10 +713,18 @@ function showCustomAlert(message, type = "success") {
     alertBox.remove();
   }, 5000);
 }
+// Load booked dates when site loads
+getBookedDates().then(bookedDates => {
+  window.bookedDates = bookedDates; // ✅ make globally available
+  console.log("Booked dates loaded:", bookedDates);
+});
+
+
 
 // Admin access - direct link to management dashboard
 function initAdminAccess() {
   // Admin access is now handled by direct link in HTML
   // No authentication modal needed on frontend
 }
+
 
