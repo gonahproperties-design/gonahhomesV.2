@@ -138,6 +138,66 @@ function hideUserInfo() {
     emailForm.style.display = 'block';
     reviewForm.style.display = 'none';
   }
+  // ==============================
+// FETCH BOOKED DATES FROM FIREBASE
+// ==============================
+async function getBookedDates() {
+  const querySnapshot = await db.collection("bookings").get();
+  const bookedDates = [];
+
+  querySnapshot.forEach((doc) => {
+    const data = doc.data();
+    if (data.checkin && data.checkout) {
+      bookedDates.push({
+        checkIn: data.checkin,
+        checkOut: data.checkout
+      });
+    }
+  });
+
+  return bookedDates;
+}
+  // ==============================
+// SETUP FLATPICKR DATE PICKERS
+// ==============================
+function setupDatePickers(bookedDates) {
+  const checkinInput = document.getElementById('booking-checkin');
+  const checkoutInput = document.getElementById('booking-checkout');
+
+  if (!checkinInput || !checkoutInput) return;
+
+  // Turn booked date ranges into Flatpickr disable ranges
+  const disabledRanges = bookedDates.map(b => ({
+    from: b.checkIn,
+    to: b.checkOut
+  }));
+
+  // Initialize the check-in picker
+  const checkinPicker = flatpickr(checkinInput, {
+    dateFormat: "Y-m-d",
+    minDate: "today",
+    disable: disabledRanges,
+    onChange: function(selectedDates) {
+      if (selectedDates.length) {
+        checkoutPicker.set('minDate', selectedDates[0]);
+      }
+    }
+  });
+
+  // Initialize the check-out picker
+  const checkoutPicker = flatpickr(checkoutInput, {
+    dateFormat: "Y-m-d",
+    minDate: "today",
+    disable: disabledRanges
+  });
+}
+  // ==============================
+// LOAD BOOKED DATES ON PAGE LOAD
+// ==============================
+getBookedDates().then(bookedDates => {
+  window.bookedDates = bookedDates; // Make available globally
+  console.log("Booked dates loaded:", bookedDates);
+});
 }
 
 function renderTestimonials(reviews) {
@@ -713,30 +773,6 @@ function showCustomAlert(message, type = "success") {
     alertBox.remove();
   }, 5000);
 }
-// Fetch all booked dates from Firestore
-async function getBookedDates() {
-  const querySnapshot = await db.collection("bookings").get();
-  const bookedDates = [];
-
-  querySnapshot.forEach((doc) => {
-    const data = doc.data();
-    if (data.checkin && data.checkout) {
-      bookedDates.push({
-        checkIn: data.checkin,
-        checkOut: data.checkout
-      });
-    }
-  });
-
-  return bookedDates;
-}
-// Load booked dates when site loads
-getBookedDates().then(bookedDates => {
-  window.bookedDates = bookedDates; // ✅ make globally available
-  console.log("Booked dates loaded:", bookedDates);
-});
-
-
 
 // Admin access - direct link to management dashboard
 function initAdminAccess() {
