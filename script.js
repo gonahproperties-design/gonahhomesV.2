@@ -166,7 +166,8 @@ function openBookingModal(house) {
     confirmDiv.style.display = 'none';
     form.reset();
     // Fetch booked dates and setup calendar
-getBookedDates(house).then(setupDatePickers);
+await getBookedDates(house);
+setupDatePickers();
 
     // Set minimum dates to today
     const today = new Date().toISOString().split('T')[0];
