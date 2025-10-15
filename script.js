@@ -76,26 +76,21 @@ function openBookingModal(house) {
     form.style.display = 'block';
     confirmDiv.style.display = 'none';
     form.reset();
-    //Call Flatpickr setup when modal opens
-  if (window.bookedDates && window.bookedDates.length) {
-    setupDatePickers(window.bookedDates);
-  }
-  }
 
     // Set minimum dates to today
     const today = new Date().toISOString().split('T')[0];
     const checkinInput = document.getElementById('booking-checkin');
     const checkoutInput = document.getElementById('booking-checkout');
-
+    
     checkinInput.min = today;
     checkoutInput.min = today;
-
+    
     // Update checkout min date when checkin changes
     checkinInput.addEventListener('change', function() {
       const checkinDate = new Date(this.value);
       checkinDate.setDate(checkinDate.getDate() + 1); // Next day minimum
       checkoutInput.min = checkinDate.toISOString().split('T')[0];
-
+      
       // Clear checkout if it's before the new minimum
       if (checkoutInput.value && new Date(checkoutInput.value) <= new Date(this.value)) {
         checkoutInput.value = '';
@@ -306,11 +301,20 @@ function initFormHandlers() {
         document.getElementById('review-text').value = '';
         document.querySelectorAll('input[name="rating"]').forEach(input => input.checked = false);
         showCustomAlert("Thank you for your review! It has been submitted successfully.");
-
-        // Use notification service for reviews
-        if (window.notificationService) {
-          window.notificationService.handleReviewNotification(reviewData);
-        }
+        
+        // Send notification to admin
+        return db.collection("notifications").add({
+          type: 'new_review',
+          data: {
+            ...reviewData,
+            user: {
+              name: currentUser.email.split('@')[0],
+              email: currentUser.email
+            }
+          },
+          status: 'pending',
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
       }).catch((error) => {
         console.error("Error adding review: ", error);
         showCustomAlert("Error submitting review. Please try again.", "error");
@@ -322,120 +326,75 @@ function initFormHandlers() {
   }
 
   // Booking form
-  // 🏠 Gonah Homes Booking Script (Fixed Version)
-const bookingForm = document.getElementById('booking-form');
+  const bookingForm = document.getElementById('booking-form');
+  if (bookingForm) {
+    bookingForm.addEventListener('submit', (e) => {
+      e.preventDefault();
 
-if (bookingForm) {
-  bookingForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
+      const formData = new FormData(bookingForm);
+      const bookingData = Object.fromEntries(formData.entries());
 
-    const formData = new FormData(bookingForm);
-    const bookingData = Object.fromEntries(formData.entries());
+      // Validation
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const checkinDate = new Date(bookingData.checkin);
+      const checkoutDate = new Date(bookingData.checkout);
 
-    // ✅ Auto-fill accommodation field if available
-    bookingData.accommodationId = document.getElementById('booking-house')?.value || '';
-    bookingData.houseName = bookingData.accommodationId || 'Unspecified';
-
-    // --- Validation ---
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const checkinDate = new Date(bookingData.checkin);
-    const checkoutDate = new Date(bookingData.checkout);
-
-    if (!bookingData.name || !bookingData.guests || !bookingData.checkin ||
-        !bookingData.checkout || !bookingData.phone || !bookingData.email) {
-      showCustomAlert("Please fill all required booking fields.", "error");
-      return;
-    }
-
-    if (checkinDate < today) {
-      showCustomAlert("Check-in date cannot be in the past.", "error");
-      return;
-    }
-
-    if (checkoutDate <= checkinDate) {
-      showCustomAlert("Check-out date must be after check-in date.", "error");
-      return;
-    }
-
-    // At least one night stay
-    const daysDiff = Math.ceil((checkoutDate - checkinDate) / (1000 * 3600 * 24));
-    if (daysDiff < 1) {
-      showCustomAlert("Minimum stay is one night.", "error");
-      return;
-    }
-
-    // --- Loading state ---
-    const submitBtn = bookingForm.querySelector('[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-    submitBtn.disabled = true;
-
-    try {
-      const accommodationId = bookingData.accommodationId;
-      if (!accommodationId) {
-        showCustomAlert("Missing accommodation information. Please select a house again.", "error");
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
+      if (!bookingData.name || !bookingData.guests || !bookingData.checkin || 
+          !bookingData.checkout || !bookingData.phone || !bookingData.email) {
+        showCustomAlert("Please fill all required booking fields.", "error");
         return;
       }
 
-      // 🔍 Check for booked dates
-      const accRef = db.collection("accommodations").doc(accommodationId);
-      const accSnap = await accRef.get();
-      const existingDates = accSnap.exists ? accSnap.data().bookedDates || [] : [];
-
-      const newDates = getDatesInRange(bookingData.checkin, bookingData.checkout);
-      const conflict = newDates.some(date => existingDates.includes(date));
-
-      if (conflict) {
-        showCustomAlert("Some of the selected dates are already booked. Please choose different dates.", "error");
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
+      if (checkinDate < today) {
+        showCustomAlert("Check-in date cannot be in the past.", "error");
         return;
       }
 
-      // ✅ Save booking
-      await db.collection("bookings").add({
+      if (checkoutDate <= checkinDate) {
+        showCustomAlert("Check-out date must be after check-in date.", "error");
+        return;
+      }
+
+      // Ensure at least one night stay
+      const timeDiff = checkoutDate.getTime() - checkinDate.getTime();
+      const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+      if (daysDiff < 1) {
+        showCustomAlert("Minimum stay is one night.", "error");
+        return;
+      }
+
+      // Show loading state
+      const submitBtn = bookingForm.querySelector('[type="submit"]');
+      const originalText = submitBtn.innerHTML;
+      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+      submitBtn.disabled = true;
+
+      // Save booking to database
+      db.collection("bookings").add({
         ...bookingData,
         timestamp: firebase.firestore.FieldValue.serverTimestamp(),
         status: 'pending'
+      }).then(() => {
+        showBookingConfirmation(bookingData);
+        
+        // Send notification to admin
+        return db.collection("notifications").add({
+          type: 'new_booking',
+          data: bookingData,
+          status: 'pending',
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      }).catch((error) => {
+        console.error("Error saving booking: ", error);
+        showCustomAlert("Error processing booking. Please try again.", "error");
+      }).finally(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
       });
-
-      // Update booked dates for this accommodation
-      const updatedDates = [...new Set([...existingDates, ...newDates])];
-      await accRef.set({ bookedDates: updatedDates }, { merge: true });
-
-      // ✅ Success
-      showBookingConfirmation(bookingData);
-
-      if (window.notificationService) {
-        window.notificationService.handleBookingNotification(bookingData);
-      }
-
-    } catch (error) {
-      console.error("Error saving booking:", error);
-      showCustomAlert("Error processing booking. Please try again.", "error");
-    } finally {
-      submitBtn.innerHTML = originalText;
-      submitBtn.disabled = false;
-    }
-  });
-}
-
-// 🔹 Helper Function: Generate all dates in a range
-function getDatesInRange(start, end) {
-  const dateArray = [];
-  let current = new Date(start);
-  const stop = new Date(end);
-
-  while (current <= stop) {
-    dateArray.push(current.toISOString().split('T')[0]);
-    current.setDate(current.getDate() + 1);
+    });
   }
-  return dateArray;
-}
+
   // Contact form
   const contactForm = document.getElementById('contact-form');
   if (contactForm) {
@@ -465,17 +424,20 @@ function getDatesInRange(start, end) {
         timestamp: firebase.firestore.FieldValue.serverTimestamp(),
         status: 'new'
       }).then(() => {
-        showCustomAlert("Thank you for your message! We will get back to you soon.");
+        showCustomAlert("Thank you for your message! We will get back to you soon.", "success");
         contactForm.reset();
-
-        // Use notification service for contact
-        if (window.notificationService) {
-          window.notificationService.handleContactNotification({
+        
+        // Send notification to admin
+        return db.collection("notifications").add({
+          type: 'new_message',
+          data: {
             name: name,
             email: email,
             message: message
-          });
-        }
+          },
+          status: 'pending',
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
       }).catch((error) => {
         console.error("Error sending message: ", error);
         showCustomAlert("Error sending message. Please try again.", "error");
@@ -504,7 +466,6 @@ function showBookingConfirmation(bookingData) {
       <p><strong>Number of Guests:</strong> ${bookingData.guests}</p>
       <p><strong>Check-in:</strong> ${formatDate(bookingData.checkin)}</p>
       <p><strong>Check-out:</strong> ${formatDate(bookingData.checkout)}</p>
-      ${bookingData.preferred_checkin_time ? `<p><strong>Preferred Check-in Time:</strong> ${bookingData.preferred_checkin_time}</p>` : ''}
       ${bookingData.access ? `<p><strong>Accessibility Needs:</strong> ${bookingData.access}</p>` : ''}
       ${bookingData.requests ? `<p><strong>Special Requests:</strong> ${bookingData.requests}</p>` : ''}
     `;
@@ -585,50 +546,78 @@ function initNavbarScroll() {
 
 // Slideshow functionality
 let slideIndex = 0;
-let slides = [];
-let indicators = [];
-
-function initSlideElements() {
-  slides = document.querySelectorAll('.slide');
-  indicators = document.querySelectorAll('.indicator');
-}
+const slides = document.querySelectorAll('.slide');
+const indicators = document.querySelectorAll('.indicator');
 
 function showSlide(index) {
-  if (slides.length === 0) return;
-  
   slides.forEach(slide => slide.classList.remove('active'));
   indicators.forEach(indicator => indicator.classList.remove('active'));
-
-  if (slides[index] && indicators[index]) {
-    slides[index].classList.add('active');
-    indicators[index].classList.add('active');
-  }
+  
+  slides[index].classList.add('active');
+  indicators[index].classList.add('active');
 }
 
 function nextSlide() {
-  if (slides.length === 0) return;
   slideIndex = (slideIndex + 1) % slides.length;
   showSlide(slideIndex);
 }
 
 function currentSlide(index) {
-  if (slides.length === 0) return;
   slideIndex = index - 1;
   showSlide(slideIndex);
 }
 
 function initSlideshow() {
-  initSlideElements();
   if (slides.length > 0) {
-    showSlide(0);
     // Auto-advance slides every 5 seconds
     setInterval(nextSlide, 5000);
+  }
+}
+
+// Admin Access Functions
+function openAdminModal() {
+  const modal = document.getElementById('admin-login-modal');
+  if (modal) {
+    modal.style.display = 'flex';
+  }
+}
+
+function closeAdminModal() {
+  const modal = document.getElementById('admin-login-modal');
+  if (modal) {
+    modal.style.display = 'none';
+    document.getElementById('admin-login-form').reset();
+    document.getElementById('admin-login-error').style.display = 'none';
+  }
+}
+
+function handleAdminLogin(e) {
+  e.preventDefault();
+  
+  const username = document.getElementById('admin-username').value.trim();
+  const password = document.getElementById('admin-password').value;
+  const errorDiv = document.getElementById('admin-login-error');
+  
+  const adminCredentials = {
+    username: 'gonahhomes0@gmail.com',
+    password: 'gonahhomes@0799466723'
+  };
+  
+  if (username === adminCredentials.username && password === adminCredentials.password) {
+    closeAdminModal();
+    // Open the backend dashboard in a new window
+    window.open('backend/dashboard.html', '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+  } else {
+    errorDiv.textContent = 'Invalid credentials. Please try again.';
+    errorDiv.style.display = 'block';
   }
 }
 
 // Make functions globally available
 window.openBookingModal = openBookingModal;
 window.closeBookingModal = closeBookingModal;
+window.openAdminModal = openAdminModal;
+window.closeAdminModal = closeAdminModal;
 window.scrollToSection = scrollToSection;
 window.currentSlide = currentSlide;
 
@@ -645,18 +634,31 @@ document.addEventListener('DOMContentLoaded', () => {
   initSlideshow();
   initAdminAccess();
 
-  // Initialize EmailJS only once
-  if (typeof emailjs !== 'undefined' && !window.emailjsInitialized) {
-    emailjs.init("VgDakmh3WscKrr_wQ");
-    window.emailjsInitialized = true;
-  }
-
   console.log('Gonah Homes website initialized successfully!');
 });
 
 function initAdminAccess() {
-  // Admin access is now handled by direct link in HTML
-  // No authentication modal needed on frontend
+  // Add event listener for admin access button
+  const adminBtn = document.getElementById('admin-access-btn');
+  if (adminBtn) {
+    adminBtn.addEventListener('click', openAdminModal);
+  }
+  
+  // Add event listener for admin login form
+  const adminForm = document.getElementById('admin-login-form');
+  if (adminForm) {
+    adminForm.addEventListener('submit', handleAdminLogin);
+  }
+  
+  // Close modal when clicking outside
+  const adminModal = document.getElementById('admin-login-modal');
+  if (adminModal) {
+    adminModal.addEventListener('click', (e) => {
+      if (e.target === adminModal) {
+        closeAdminModal();
+      }
+    });
+  }
 }
 
 // Custom Alert Function
@@ -670,25 +672,6 @@ function showCustomAlert(message, type = "success") {
   const alertBox = document.createElement('div');
   alertBox.classList.add('custom-alert');
   alertBox.classList.add(type); // 'success', 'error', etc.
-
-  // Determine background color based on type
-  let backgroundColor = '';
-  if (type === 'success') {
-    backgroundColor = '#d4edda'; // Green background for success
-    alertBox.style.borderColor = '#28a745';
-  } else if (type === 'error') {
-    backgroundColor = '#f8d7da'; // Red background for error
-    alertBox.style.borderColor = '#dc3545';
-  } else if (type === 'info') {
-    backgroundColor = '#d1ecf1'; // Blue background for info
-    alertBox.style.borderColor = '#17a2b8';
-  } else {
-    // Default or custom background for other types, including the maroon requested for reviews/messages
-    backgroundColor = 'maroon'; // Maroon background
-    alertBox.style.color = 'white'; // White text for maroon background
-  }
-
-  alertBox.style.backgroundColor = backgroundColor;
 
   const messageBox = document.createElement('p');
   messageBox.textContent = message;
@@ -712,19 +695,4 @@ function showCustomAlert(message, type = "success") {
   setTimeout(() => {
     alertBox.remove();
   }, 5000);
-}
-// Load booked dates when site loads
-getBookedDates().then(bookedDates => {
-  window.bookedDates = bookedDates; // ✅ make globally available
-  console.log("Booked dates loaded:", bookedDates);
-});
-
-
-
-// Admin access - direct link to management dashboard
-function initAdminAccess() {
-  // Admin access is now handled by direct link in HTML
-  // No authentication modal needed on frontend
-}
-
-
+                                }
