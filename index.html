@@ -750,41 +750,7 @@
   document.getElementById("review-form")?.addEventListener("submit", sendEmail);
   document.getElementById("contact-form")?.addEventListener("submit", sendEmail);
 </script>
-          <script>
-  // Function to open the booking modal
-  function openBookingModal(houseName) {
-    const modalBg = document.getElementById("booking-modal-bg");
-    const houseInput = document.getElementById("booking-house");
 
-    if (houseInput) houseInput.value = houseName;
-    if (modalBg) modalBg.style.display = "flex";
-
-    // Prevent page scroll when modal is open
-    document.body.style.overflow = "hidden";
-  }
-
-  // Function to close the booking modal
-  function closeBookingModal() {
-    const modalBg = document.getElementById("booking-modal-bg");
-    if (modalBg) modalBg.style.display = "none";
-
-    // Restore page scroll
-    document.body.style.overflow = "auto";
-  }
-
-  // Enable Flatpickr on date inputs
-  document.addEventListener("DOMContentLoaded", () => {
-    flatpickr("#booking-checkin", { dateFormat: "Y-m-d" });
-    flatpickr("#booking-checkout", { dateFormat: "Y-m-d" });
-  });
-
-  // Optional: close modal when background is clicked
-  document.getElementById("booking-modal-bg").addEventListener("click", (e) => {
-    if (e.target.id === "booking-modal-bg") {
-      closeBookingModal();
-    }
-  });
-          </script>
           <script src="script.js"></script>
 </body>
                                                              </html>
