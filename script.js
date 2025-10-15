@@ -402,119 +402,73 @@ function initFormHandlers() {
   }
 
   // Booking form
-  // 🏠 Gonah Homes Booking Script (Fixed Version)
+  Booking form
 const bookingForm = document.getElementById('booking-form');
-
 if (bookingForm) {
-  bookingForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
+bookingForm.addEventListener('submit', (e) => {
+e.preventDefault();
 
-    const formData = new FormData(bookingForm);
-    const bookingData = Object.fromEntries(formData.entries());
+const formData = new FormData(bookingForm);  
+  const bookingData = Object.fromEntries(formData.entries());  
 
-    // ✅ Auto-fill accommodation field if available
-    bookingData.accommodationId = document.getElementById('booking-house')?.value || '';
-    bookingData.houseName = bookingData.accommodationId || 'Unspecified';
+  // Validation  
+  const today = new Date();  
+  today.setHours(0, 0, 0, 0);  
+  const checkinDate = new Date(bookingData.checkin);  
+  const checkoutDate = new Date(bookingData.checkout);  
 
-    // --- Validation ---
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+  if (!bookingData.name || !bookingData.guests || !bookingData.checkin ||  
+      !bookingData.checkout || !bookingData.phone || !bookingData.email) {  
+    showCustomAlert("Please fill all required booking fields.", "error");  
+    return;  
+  }  
 
-    const checkinDate = new Date(bookingData.checkin);
-    const checkoutDate = new Date(bookingData.checkout);
+  if (checkinDate < today) {  
+    showCustomAlert("Check-in date cannot be in the past.", "error");  
+    return;  
+  }  
 
-    if (!bookingData.name || !bookingData.guests || !bookingData.checkin ||
-        !bookingData.checkout || !bookingData.phone || !bookingData.email) {
-      showCustomAlert("Please fill all required booking fields.", "error");
-      return;
-    }
+  if (checkoutDate <= checkinDate) {  
+    showCustomAlert("Check-out date must be after check-in date.", "error");  
+    return;  
+  }  
 
-    if (checkinDate < today) {
-      showCustomAlert("Check-in date cannot be in the past.", "error");
-      return;
-    }
+  // Ensure at least one night stay  
+  const timeDiff = checkoutDate.getTime() - checkinDate.getTime();  
+  const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));  
+  if (daysDiff < 1) {  
+    showCustomAlert("Minimum stay is one night.", "error");  
+    return;  
+  }  
 
-    if (checkoutDate <= checkinDate) {
-      showCustomAlert("Check-out date must be after check-in date.", "error");
-      return;
-    }
+  // Show loading state  
+  const submitBtn = bookingForm.querySelector('[type="submit"]');  
+  const originalText = submitBtn.innerHTML;  
+  submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';  
+  submitBtn.disabled = true;  
 
-    // At least one night stay
-    const daysDiff = Math.ceil((checkoutDate - checkinDate) / (1000 * 3600 * 24));
-    if (daysDiff < 1) {
-      showCustomAlert("Minimum stay is one night.", "error");
-      return;
-    }
+  // Save booking to database  
+  db.collection("bookings").add({  
+    ...bookingData,  
+    timestamp: firebase.firestore.FieldValue.serverTimestamp(),  
+    status: 'pending'  
+  }).then(() => {  
+    showBookingConfirmation(bookingData);  
 
-    // --- Loading state ---
-    const submitBtn = bookingForm.querySelector('[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-    submitBtn.disabled = true;
+    // Use notification service for booking  
+    if (window.notificationService) {  
+      window.notificationService.handleBookingNotification(bookingData);  
+    }  
+  }).catch((error) => {  
+    console.error("Error saving booking: ", error);  
+    showCustomAlert("Error processing booking. Please try again.", "error");  
+  }).finally(() => {  
+    submitBtn.innerHTML = originalText;  
+    submitBtn.disabled = false;  
+  });  
+});
 
-    try {
-      const accommodationId = bookingData.accommodationId;
-      if (!accommodationId) {
-        showCustomAlert("Missing accommodation information. Please select a house again.", "error");
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
-        return;
-      }
-
-      // 🔍 Check for booked dates
-      const accRef = db.collection("accommodations").doc(accommodationId);
-      const accSnap = await accRef.get();
-      const existingDates = accSnap.exists ? accSnap.data().bookedDates || [] : [];
-
-      const newDates = getDatesInRange(bookingData.checkin, bookingData.checkout);
-      const conflict = newDates.some(date => existingDates.includes(date));
-
-      if (conflict) {
-        showCustomAlert("Some of the selected dates are already booked. Please choose different dates.", "error");
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
-        return;
-      }
-
-      // ✅ Save booking
-      await db.collection("bookings").add({
-        ...bookingData,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-        status: 'pending'
-      });
-
-      // Update booked dates for this accommodation
-      const updatedDates = [...new Set([...existingDates, ...newDates])];
-      await accRef.set({ bookedDates: updatedDates }, { merge: true });
-
-      // ✅ Success
-      showBookingConfirmation(bookingData);
-
-      if (window.notificationService) {
-        window.notificationService.handleBookingNotification(bookingData);
-      }
-
-    } catch (error) {
-      console.error("Error saving booking:", error);
-      showCustomAlert("Error processing booking. Please try again.", "error");
-    } finally {
-      submitBtn.innerHTML = originalText;
-      submitBtn.disabled = false;
-    }
-  });
 }
-
-// 🔹 Helper Function: Generate all dates in a range
-function getDatesInRange(start, end) {
-  const dateArray = [];
-  let current = new Date(start);
-  const stop = new Date(end);
-
-  while (current <= stop) {
-    dateArray.push(current.toISOString().split('T')[0]);
-    current.setDate(current.getDate() + 1);
-  }
-  return dateArray;
 }
   // Contact form
   const contactForm = document.getElementById('contact-form');
