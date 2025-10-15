@@ -16,6 +16,63 @@ if (!firebase.apps.length) {
 const db = firebase.firestore();
 let currentUser = null;
 const adminEmail = "gonahhomes0@gmail.com";
+// === 🔹 BOOKED DATES HANDLING ===
+let bookedDates = [];
+
+// Fetch booked dates from Firestore
+async function getBookedDates() {
+  try {
+    const snapshot = await db.collection("bookings").get();
+    const dates = [];
+
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      if (data.checkin && data.checkout) {
+        const start = new Date(data.checkin);
+        const end = new Date(data.checkout);
+
+        // Push all dates between checkin and checkout
+        for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+          dates.push(d.toISOString().split("T")[0]);
+        }
+      }
+    });
+
+    // Store globally
+    window.bookedDates = dates;
+    bookedDates = dates;
+    console.log("Booked dates loaded:", bookedDates);
+  } catch (err) {
+    console.error("Error fetching booked dates:", err);
+  }
+}
+
+// Setup date pickers with blocked dates
+function setupDatePickers() {
+  const checkinInput = document.getElementById("booking-checkin");
+  const checkoutInput = document.getElementById("booking-checkout");
+
+  if (!checkinInput || !checkoutInput) return;
+
+  // Initialize check-in Flatpickr
+  const checkinPicker = flatpickr(checkinInput, {
+    dateFormat: "Y-m-d",
+    minDate: "today",
+    disable: bookedDates, // Disable already booked dates
+    onChange: function (selectedDates, dateStr) {
+      if (selectedDates.length) {
+        checkoutPicker.set("minDate", dateStr);
+      }
+    }
+  });
+
+  // Initialize checkout Flatpickr
+  const checkoutPicker = flatpickr(checkoutInput, {
+    dateFormat: "Y-m-d",
+    minDate: "today",
+    disable: bookedDates
+  });
+}
 
 // Utility Functions
 function scrollToSection(sectionId) {
@@ -76,6 +133,8 @@ function openBookingModal(house) {
     form.style.display = 'block';
     confirmDiv.style.display = 'none';
     form.reset();
+    // Fetch booked dates and setup calendar
+getBookedDates().then(setupDatePickers);
 
     // Set minimum dates to today
     const today = new Date().toISOString().split('T')[0];
