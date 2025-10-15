@@ -19,12 +19,37 @@ const adminEmail = "gonahhomes0@gmail.com";
 // === 🔹 BOOKED DATES HANDLING (PER HOUSE) ===
 let bookedDates = [];
 
-// Fetch booked dates for the selected house
+// === ✅ IMPROVED BOOKED DATES FUNCTION ===
 async function getBookedDates(houseName) {
   try {
     const snapshot = await db.collection("bookings")
       .where("house", "==", houseName)
       .get();
+
+    const dates = new Set(); // avoid duplicates
+
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      if (data.checkin && data.checkout) {
+        const start = new Date(data.checkin);
+        const end = new Date(data.checkout);
+
+        // Loop through all dates in the range
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+          const isoDate = new Date(d).toISOString().split("T")[0];
+          dates.add(isoDate);
+        }
+      }
+    });
+
+    bookedDates = Array.from(dates);
+    console.log(`✅ Blocked dates for ${houseName}:`, bookedDates);
+    return bookedDates;
+  } catch (err) {
+    console.error("Error fetching booked dates:", err);
+    return [];
+  }
+}
 
     const dates = [];
 
