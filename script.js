@@ -138,7 +138,9 @@ function hideUserInfo() {
     emailForm.style.display = 'block';
     reviewForm.style.display = 'none';
   }
-  // ==============================
+}
+
+// ==============================
 // FETCH BOOKED DATES FROM FIREBASE
 // ==============================
 async function getBookedDates() {
@@ -157,7 +159,8 @@ async function getBookedDates() {
 
   return bookedDates;
 }
-  // ==============================
+
+// ==============================
 // SETUP FLATPICKR DATE PICKERS
 // ==============================
 function setupDatePickers(bookedDates) {
@@ -177,6 +180,14 @@ function setupDatePickers(bookedDates) {
     dateFormat: "Y-m-d",
     minDate: "today",
     disable: disabledRanges,
+    onDayCreate: function(dObj, dStr, fp, dayElem) {
+      const dateStr = dayElem.dateObj.toISOString().split('T')[0];
+      disabledRanges.forEach(range => {
+        if (dateStr >= range.from && dateStr <= range.to) {
+          dayElem.innerHTML = `<span class="booked-day">Booked</span>`;
+        }
+      });
+    },
     onChange: function(selectedDates) {
       if (selectedDates.length) {
         checkoutPicker.set('minDate', selectedDates[0]);
@@ -188,14 +199,23 @@ function setupDatePickers(bookedDates) {
   const checkoutPicker = flatpickr(checkoutInput, {
     dateFormat: "Y-m-d",
     minDate: "today",
-    disable: disabledRanges
+    disable: disabledRanges,
+    onDayCreate: function(dObj, dStr, fp, dayElem) {
+      const dateStr = dayElem.dateObj.toISOString().split('T')[0];
+      disabledRanges.forEach(range => {
+        if (dateStr >= range.from && dateStr <= range.to) {
+          dayElem.innerHTML = `<span class="booked-day">Booked</span>`;
+        }
+      });
+    }
   });
 }
-  // ==============================
+
+// ==============================
 // LOAD BOOKED DATES ON PAGE LOAD
 // ==============================
 getBookedDates().then(bookedDates => {
-  window.bookedDates = bookedDates; // Make available globally
+  window.bookedDates = bookedDates; // ✅ make it global
   console.log("Booked dates loaded:", bookedDates);
 });
 }
@@ -210,7 +230,7 @@ function renderTestimonials(reviews) {
         <div class="testimonial-rating">
           <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
         </div>
-        <p class="testimonial-text">"Amazing experience! The apartment was spotless, beautifully furnished, and the location was perfect. Will definitely book again!"</p>
+        <p class="testimonial-text">"Amazing experience! The apartment was spoifully furnished, and the location was perfect. Will definitely book again!"</p>
         <div class="testimonial-author">
           <img src="https://images.unsplash.com/photo-1494790108755-2616b612b577?w=100&h=100&fit=crop&crop=face" alt="Sarah Johnson" class="author-avatar">
           <div class="author-info">
