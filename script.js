@@ -16,13 +16,16 @@ if (!firebase.apps.length) {
 const db = firebase.firestore();
 let currentUser = null;
 const adminEmail = "gonahhomes0@gmail.com";
-// === 🔹 BOOKED DATES HANDLING ===
+// === 🔹 BOOKED DATES HANDLING (PER HOUSE) ===
 let bookedDates = [];
 
-// Fetch booked dates from Firestore
-async function getBookedDates() {
+// Fetch booked dates for the selected house
+async function getBookedDates(houseName) {
   try {
-    const snapshot = await db.collection("bookings").get();
+    const snapshot = await db.collection("bookings")
+      .where("house", "==", houseName)
+      .get();
+
     const dates = [];
 
     snapshot.forEach((doc) => {
@@ -31,7 +34,7 @@ async function getBookedDates() {
         const start = new Date(data.checkin);
         const end = new Date(data.checkout);
 
-        // Push all dates between checkin and checkout
+        // Push all dates between check-in and check-out
         for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
           dates.push(d.toISOString().split("T")[0]);
         }
@@ -41,7 +44,7 @@ async function getBookedDates() {
     // Store globally
     window.bookedDates = dates;
     bookedDates = dates;
-    console.log("Booked dates loaded:", bookedDates);
+    console.log(`Booked dates for ${houseName}:`, bookedDates);
   } catch (err) {
     console.error("Error fetching booked dates:", err);
   }
@@ -54,11 +57,15 @@ function setupDatePickers() {
 
   if (!checkinInput || !checkoutInput) return;
 
-  // Initialize check-in Flatpickr
+  // Destroy old Flatpickr instances if any
+  if (checkinInput._flatpickr) checkinInput._flatpickr.destroy();
+  if (checkoutInput._flatpickr) checkoutInput._flatpickr.destroy();
+
+  // Initialize check-in picker
   const checkinPicker = flatpickr(checkinInput, {
     dateFormat: "Y-m-d",
     minDate: "today",
-    disable: bookedDates, // Disable already booked dates
+    disable: bookedDates, // Disable house-specific booked dates
     onChange: function (selectedDates, dateStr) {
       if (selectedDates.length) {
         checkoutPicker.set("minDate", dateStr);
@@ -66,7 +73,7 @@ function setupDatePickers() {
     }
   });
 
-  // Initialize checkout Flatpickr
+  // Initialize check-out picker
   const checkoutPicker = flatpickr(checkoutInput, {
     dateFormat: "Y-m-d",
     minDate: "today",
