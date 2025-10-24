@@ -2,49 +2,45 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Gonah Homes - Premium Coastal Accommodations in Mombasa</title>
 
-  <!-- Styles (your styles.css plus small modal/legend overrides below) -->
+  <!-- Your main site CSS -->
   <link rel="stylesheet" href="styles.css">
 
-  <!-- Font Awesome for icons -->
+  <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
-  <!-- Google Fonts -->
+  <!-- Google Font -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- Flatpickr -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+  <!-- Flatpickr CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <style>
-    /* Modal basics (keeps look similar to your site) */
-    .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 60; align-items: center; justify-content: center; }
-    .modal-backdrop.active { display: flex; }
-    .modal { background: #fff; border-radius: 10px; width: 92%; max-width: 760px; padding: 1rem; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
-    .modal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom: 0.5rem; }
-    .modal-close { background: transparent; border: none; font-size: 1.2rem; cursor:pointer; color:#333; }
-    .modal-body { max-height: 70vh; overflow:auto; padding-top: 0.5rem; }
-    form .form-row { display:flex; gap: 1rem; flex-wrap:wrap; }
-    form .form-group { flex: 1 1 200px; display:flex; flex-direction:column; gap:6px; }
-    input[readonly] { background: #fff; cursor: pointer; }
-    /* Flatpickr custom classes */
-    .flatpickr-day.booked { background: #e6e6e6 !important; color: #8a8a8a !important; pointer-events: none; }
-    .flatpickr-day.available { box-shadow: inset 0 -4px 0 0 rgba(34,197,94,0.25); }
-    /* legend */
-    .booking-legend { display:flex; gap:12px; align-items:center; margin: 0.5rem 0 1rem; }
-    .legend-item { display:flex; gap:8px; align-items:center; font-size:0.95rem; }
-    .legend-swatch { width:20px; height:12px; border-radius:3px; border:1px solid #ccc; display:inline-block; }
+    /* small local modal + legend tweaks — keep these or move to styles.css */
+    .modal-backdrop { display: none; position: fixed; inset:0; background: rgba(0,0,0,0.45); justify-content:center; align-items:center; z-index:9999; }
+    .modal-backdrop.active { display:flex; }
+    .modal { width: 100%; max-width: 720px; background:#fff; border-radius:8px; padding: 1rem; box-shadow:0 10px 40px rgba(0,0,0,0.2); }
+    .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem; }
+    .modal-close { background:none; border:none; cursor:pointer; font-size:1.1rem; color:#333; }
+    .form-row { display:flex; gap:1rem; flex-wrap:wrap; }
+    .form-group { margin-bottom:0.75rem; flex:1 1 200px; }
+    .btn { cursor:pointer; padding:0.6rem 0.9rem; border-radius:6px; border:none; }
+    .btn-primary { background:#800000; color:#fff; }
+    .btn-outline { background:transparent; border:1px solid #800000; color:#800000; }
+    .booking-legend { display:flex; gap:1rem; align-items:center; margin-top:0.5rem; font-size:0.9rem; }
+    .legend-swatch { width:18px; height:12px; border-radius:3px; display:inline-block; border:1px solid #ccc; }
     .legend-swatch.booked { background:#e6e6e6; }
     .legend-swatch.available { background: linear-gradient(0deg, rgba(0,0,0,0) 50%, rgba(34,197,94,0.25) 50%); }
-    /* small responsive tweak */
-    @media (max-width:520px) { .modal { padding: 0.75rem; } .form-row { flex-direction: column; } }
+    /* flatpickr day custom classes */
+    .flatpickr-day.booked { background:#e6e6e6 !important; color:#8a8a8a !important; pointer-events:none; position:relative; }
+    .flatpickr-day.booked::after { content:"Booked"; position:absolute; bottom:2px; left:50%; transform:translateX(-50%); font-size:9px; color:#666; }
+    .flatpickr-day.available { box-shadow: inset 0 -4px 0 0 rgba(34,197,94,0.25); }
+    .time-picker-input { width:100%; padding:0.5rem; border-radius:6px; border:1px solid #ddd; }
   </style>
 </head>
 <body>
-  <!-- Keep your real page content (hero, features, accommodations...) -->
-  <!-- For brevity we show the sections needed for booking triggers + the booking modal.
-       Replace or merge with your full HTML where needed — fields & IDs match your original page. -->
-
+  <!-- header / content (kept short for brevity) -->
   <header class="main-header">
     <nav class="navbar">
       <div class="nav-container">
@@ -61,125 +57,107 @@
   </header>
 
   <main>
-    <!-- Example accommodation card - your real page has many; each Book Now calls openBookingModal('House Name') -->
-    <section id="accommodations" class="accommodations">
-      <div class="container">
-        <h2>Our Accommodations</h2>
-        <div class="accommodations-grid">
-          <div class="accommodation-card">
-            <h3>Luxury Maisonette</h3>
-            <button class="btn btn-primary" onclick="openBookingModal('Luxury Maisonette')">Book Now</button>
-          </div>
-          <div class="accommodation-card">
-            <h3>Studio Apartment</h3>
-            <button class="btn btn-primary" onclick="openBookingModal('Studio Apartment')">Book Now</button>
-          </div>
-        </div>
+    <!-- Featured card with Book Now -->
+    <section id="featured-stay" style="padding:2rem;">
+      <div class="featured-card">
+        <h3>Luxury Maisonette</h3>
+        <p>Featured — click Book Now to open modal with calendar</p>
+        <button class="btn btn-primary" onclick="openBookingModal('Luxury Maisonette')"><i class="fas fa-calendar-check"></i> Book Now</button>
       </div>
     </section>
+
+    <!-- (rest of your content omitted for brevity — paste your full page content here) -->
   </main>
 
-  <!-- Booking Modal (complete form) -->
+  <!-- Booking Modal -->
   <div id="booking-modal-bg" class="modal-backdrop" aria-hidden="true">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="bookingTitle">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="booking-modal-title">
       <div class="modal-header">
-        <h3 id="bookingTitle">Book Your Stay</h3>
-        <button class="modal-close" onclick="closeBookingModal()" aria-label="Close booking modal"><i class="fas fa-times"></i></button>
+        <h3 id="booking-modal-title">Book Your Stay</h3>
+        <button class="modal-close" aria-label="Close" onclick="closeBookingModal()"><i class="fas fa-times"></i></button>
       </div>
 
       <div class="modal-body">
+        <!-- legend (injected, but also include here as fallback) -->
+        <div class="booking-legend" style="margin-bottom:0.75rem;">
+          <div class="legend-item"><span class="legend-swatch booked"></span> Booked</div>
+          <div class="legend-item"><span class="legend-swatch available"></span> Available</div>
+        </div>
+
         <form id="booking-form">
           <input type="hidden" id="booking-house" name="house" value="">
 
           <div class="form-group">
             <label for="booking-name"><i class="fas fa-user"></i> Full Name</label>
-            <input type="text" id="booking-name" name="name" required>
+            <input id="booking-name" name="name" required class="time-picker-input">
           </div>
 
           <div class="form-row">
             <div class="form-group">
-              <label for="booking-guests"><i class="fas fa-users"></i> Number of Guests</label>
-              <input type="number" id="booking-guests" name="guests" min="1" required>
+              <label for="booking-guests"><i class="fas fa-users"></i> Guests</label>
+              <input id="booking-guests" name="guests" type="number" min="1" required class="time-picker-input">
             </div>
             <div class="form-group">
               <label for="booking-phone"><i class="fas fa-phone"></i> Phone / WhatsApp</label>
-              <input type="tel" id="booking-phone" name="phone" required>
+              <input id="booking-phone" name="phone" type="tel" required class="time-picker-input">
             </div>
           </div>
 
           <div class="form-group">
-            <label for="booking-email"><i class="fas fa-envelope"></i> Email Address</label>
-            <input type="email" id="booking-email" name="email" required>
+            <label for="booking-email"><i class="fas fa-envelope"></i> Email</label>
+            <input id="booking-email" name="email" type="email" required class="time-picker-input">
           </div>
 
-          <!-- Preferred check-in time as a flatpickr time picker (clock) -->
-          <div class="form-group">
+          <!-- Preferred check-in time (flatpickr time-only) -->
+          <div class="form-group" id="preferred-time-row">
             <label for="preferred-checkin-time"><i class="fas fa-clock"></i> Preferred Check-in Time (optional)</label>
-            <input type="text" id="preferred-checkin-time" name="preferred_checkin_time" placeholder="Select a time" readonly>
+            <input id="preferred-checkin-time" name="preferred_checkin_time" placeholder="Select time" readonly class="time-picker-input">
           </div>
 
-          <div class="form-row" style="align-items:flex-end;">
+          <!-- Date pickers: note inputs are type="text" so Flatpickr can create popups -->
+          <div class="form-row">
             <div class="form-group">
-              <label for="booking-checkin"><i class="fas fa-calendar"></i> Check-In Date</label>
-              <!-- important: use text + readonly so flatpickr calendar shows, not manual -->
-              <input type="text" id="booking-checkin" name="checkin" placeholder="Select check-in" readonly required>
+              <label for="booking-checkin"><i class="fas fa-calendar"></i> Check-in</label>
+              <input id="booking-checkin" name="checkin" type="text" placeholder="Select check-in date" readonly required class="time-picker-input">
             </div>
             <div class="form-group">
-              <label for="booking-checkout"><i class="fas fa-calendar"></i> Check-Out Date</label>
-              <input type="text" id="booking-checkout" name="checkout" placeholder="Select check-out" readonly required>
+              <label for="booking-checkout"><i class="fas fa-calendar"></i> Check-out</label>
+              <input id="booking-checkout" name="checkout" type="text" placeholder="Select check-out date" readonly required class="time-picker-input">
             </div>
           </div>
 
           <div class="form-group">
-            <label for="booking-access"><i class="fas fa-wheelchair"></i> Accessibility Needs (Optional)</label>
-            <textarea id="booking-access" name="access" rows="2" placeholder="e.g. wheelchair access"></textarea>
+            <label for="booking-requests"><i class="fas fa-sticky-note"></i> Special Requests</label>
+            <textarea id="booking-requests" name="requests" rows="2" class="time-picker-input"></textarea>
           </div>
 
-          <div class="form-group">
-            <label for="booking-requests"><i class="fas fa-sticky-note"></i> Special Requests (Optional)</label>
-            <textarea id="booking-requests" name="requests" rows="2" placeholder="e.g. Early check-in, allergies"></textarea>
+          <div style="display:flex; gap:0.75rem; margin-top:0.5rem;">
+            <button type="submit" class="btn btn-primary btn-full"><i class="fas fa-calendar-check"></i> Complete Booking</button>
+            <button type="button" class="btn btn-outline" onclick="closeBookingModal()">Cancel</button>
           </div>
-
-          <!-- Legend -->
-          <div class="booking-legend" aria-hidden="true">
-            <div class="legend-item"><span class="legend-swatch booked"></span> Booked</div>
-            <div class="legend-item"><span class="legend-swatch available"></span> Available</div>
-          </div>
-
-          <button type="submit" class="btn btn-primary btn-full"><i class="fas fa-calendar-check"></i> Complete Booking</button>
         </form>
 
-        <!-- Booking confirmation placeholder -->
-        <div id="booking-confirm" class="booking-success" style="display:none; margin-top:12px;">
-          <div class="success-icon"><i class="fas fa-check-circle" style="font-size:32px;color:#28a745"></i></div>
-          <h3>Booking Request Submitted!</h3>
-          <div id="booking-details" style="margin-top:8px;"></div>
-          <div style="margin-top:12px;">
-            <button class="btn btn-outline" onclick="closeBookingModal()">Close</button>
-          </div>
+        <div id="booking-confirm" style="display:none; margin-top:1rem;">
+          <h4>Booking Request Submitted</h4>
+          <div id="booking-details"></div>
+          <button class="btn btn-outline" onclick="closeBookingModal()">Close</button>
         </div>
-
       </div>
     </div>
   </div>
 
-  <!-- Firebase (compat) -->
+  <!-- Firebase SDK (compat for easier migration) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-  <!-- Flatpickr (script) -->
+  <!-- Flatpickr -->
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
-  <!-- Your script (complete file) -->
+  <!-- Your app script (script.js) -->
   <script src="script.js"></script>
 
-  <!-- Optional: emailjs init if you use it -->
+  <!-- Optional: EmailJS -->
   <script src="https://cdn.emailjs.com/dist/email.min.js"></script>
-  <script>
-    if (window.emailjs) {
-      try { emailjs.init("VgDakmh3WscKrr_wQ"); } catch (e) { /* ignore */ }
-    }
-  </script>
+  <script> (function(){ if(window.emailjs) emailjs.init("VgDakmh3WscKrr_wQ"); })(); </script>
 </body>
 </html>
