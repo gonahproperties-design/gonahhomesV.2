@@ -1,6 +1,6 @@
-// script.js (full — ready to paste)
+// script.js (paste as a single file; overwrite existing script.js)
 
-// -------- Firebase Configuration (replace with your own if needed) --------
+// ---------- Firebase configuration (your values) ----------
 const firebaseConfig = {
   apiKey: "AIzaSyABTVp797tNu353FBVLzsOp90aIX2mNF74",
   authDomain: "my-website-project2797.firebaseapp.com",
@@ -11,672 +11,371 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase (compat)
-if (!window.firebase) {
-  console.error("Firebase SDK not loaded. Make sure firebase scripts are included in HTML.");
-} else {
-  if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-  }
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
 }
 const db = firebase.firestore();
 
-// -------- Globals --------
-let currentUser = null;
-const adminEmail = "gonahhomes0@gmail.com";
-
-let bookedDates = [];      // array of YYYY-MM-DD strings for current house
-let bookedSet = new Set(); // quick lookup
+// ---------- State ----------
+let bookedDates = [];       // string array YYYY-MM-DD
+let bookedSet = new Set();  // quick lookup
 let checkinPicker = null;
 let checkoutPicker = null;
+let timePicker = null;
 
-// -------- Inject CSS for flatpickr custom classes & legend (once) --------
+// ---------- Inject style for legend/flatpickr (already present in HTML but keep safe) ----------
 (function injectStyles() {
-  const id = 'flatpickr-custom-styles';
+  const id = 'app-flatpickr-styles';
   if (document.getElementById(id)) return;
   const style = document.createElement('style');
   style.id = id;
   style.innerHTML = `
-    /* Booked day: greyed and muted */
-    .flatpickr-day.booked {
-      background: #e6e6e6 !important;
-      color: #8a8a8a !important;
-      pointer-events: none !important;
-      position: relative;
-    }
-    .flatpickr-day.booked::after {
-      content: "Booked";
-      position: absolute;
-      bottom: 2px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 9px;
-      color: #666;
-      background: rgba(255,255,255,0.0);
-      padding: 0 2px;
-    }
-    /* Available day visual (green underline) */
-    .flatpickr-day.available {
-      box-shadow: inset 0 -4px 0 0 rgba(34,197,94,0.25);
-    }
-    /* Legend styling */
-    .booking-legend {
-      display: flex;
-      gap: 1rem;
-      align-items: center;
-      margin-top: 0.75rem;
-      font-size: 0.9rem;
-    }
-    .legend-item {
-      display:flex;
-      align-items:center;
-      gap:0.5rem;
-    }
-    .legend-swatch {
-      width: 18px;
-      height: 12px;
-      border-radius: 3px;
-      display:inline-block;
-      border: 1px solid #ccc;
-    }
-    .legend-swatch.booked { background: #e6e6e6; }
-    .legend-swatch.available {
-      background: linear-gradient(0deg, rgba(0,0,0,0) 50%, rgba(34,197,94,0.25) 50%);
-    }
-
-    /* Modal active class (simple helper) */
-    #booking-modal-bg { display: none; }
-    #booking-modal-bg.active { display: block; }
+    .flatpickr-day.booked { background:#e6e6e6 !important; color:#8a8a8a !important; pointer-events:none; position: relative; }
+    .flatpickr-day.booked::after { content: "Booked"; position:absolute; bottom:2px; left:50%; transform:translateX(-50%); font-size:9px; color:#666; }
+    .flatpickr-day.available { box-shadow: inset 0 -4px 0 0 rgba(34,197,94,0.25); }
   `;
   document.head.appendChild(style);
 })();
 
-// -------- Utilities --------
-function isoDate(d) {
-  return new Date(d).toISOString().split('T')[0];
+// ---------- Utility: format date to ISO YYYY-MM-DD ----------
+function toISODate(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
-function formatDate(dateString) {
-  const d = new Date(dateString);
-  if (isNaN(d.getTime())) return dateString;
-  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-}
-
-function showCustomAlert(message, type = "success") {
-  const existing = document.querySelector('.custom-alert');
-  if (existing) existing.remove();
-  const el = document.createElement('div');
-  el.className = `custom-alert ${type}`;
-  el.style.position = 'fixed';
-  el.style.right = '1rem';
-  el.style.bottom = '1rem';
-  el.style.background = type === 'error' ? '#ffe6e6' : '#f0fff4';
-  el.style.color = '#111';
-  el.style.border = '1px solid #ddd';
-  el.style.padding = '0.75rem 1rem';
-  el.style.borderRadius = '6px';
-  el.style.zIndex = 9999;
-  const p = document.createElement('p'); p.style.margin = 0; p.textContent = message;
-  const close = document.createElement('span');
-  close.innerHTML = '&times;';
-  close.style.marginLeft = '0.5rem';
-  close.style.cursor = 'pointer';
-  close.addEventListener('click', () => el.remove());
-  el.appendChild(p);
-  el.appendChild(close);
-  document.body.appendChild(el);
-  setTimeout(() => { if (el.parentNode) el.remove(); }, 5000);
-}
-
-// -------- Firestore: fetch booked dates for a house --------
-// Blocks days from checkin .. (checkout - 1 day). Checkout day remains selectable.
+// ---------- Fetch booked dates for a house (handles both "house" and "houseId" fields) ----------
 async function getBookedDates(houseName) {
-  if (!houseName) return [];
+  bookedSet = new Set();
+  bookedDates = [];
+
   try {
-    const snapshot = await db.collection("bookings").where("house", "==", houseName).get();
-    const dates = new Set();
-    snapshot.forEach(doc => {
+    // Query where "house" == houseName
+    const q1 = await db.collection("bookings").where("house", "==", houseName).get();
+    // Query where "houseId" == houseName
+    const q2 = await db.collection("bookings").where("houseId", "==", houseName).get();
+
+    const docs = [];
+    q1.forEach(d => docs.push(d));
+    q2.forEach(d => {
+      // avoid double counting same doc id
+      if (!docs.find(x => x.id === d.id)) docs.push(d);
+    });
+
+    docs.forEach(doc => {
       const data = doc.data();
-      if (!data.checkin || !data.checkout) return;
-      const start = new Date(data.checkin);
-      const end = new Date(data.checkout);
+      // Accept either checkIn/checkOut or checkin/checkout stored fields
+      const startStr = data.checkIn || data.checkin || data.check_in || null;
+      const endStr = data.checkOut || data.checkout || data.check_out || null;
+      if (!startStr || !endStr) return;
+      const start = new Date(startStr);
+      const end = new Date(endStr);
       if (isNaN(start.getTime()) || isNaN(end.getTime())) return;
-      // Loop from start to day before checkout (exclusive)
+      // Block days from start (inclusive) to day before end (exclusive)
       for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
-        dates.add(isoDate(d));
+        bookedSet.add(toISODate(d));
       }
     });
-    bookedDates = Array.from(dates).sort();
-    bookedSet = new Set(bookedDates);
-    console.log(`[bookings] blocked for ${houseName}:`, bookedDates);
+
+    bookedDates = Array.from(bookedSet).sort();
+    console.log('bookedDates:', bookedDates);
     return bookedDates;
   } catch (err) {
-    console.error("getBookedDates error:", err);
-    bookedDates = []; bookedSet = new Set();
+    console.error('Error fetching bookings:', err);
+    bookedSet = new Set();
+    bookedDates = [];
     return [];
   }
 }
 
-// -------- Flatpickr setup / re-setup --------
+// ---------- Setup/refresh flatpickr instances ----------
 function setupDatePickers() {
-  const checkinInput = document.getElementById("booking-checkin");
-  const checkoutInput = document.getElementById("booking-checkout");
-  if (!checkinInput || !checkoutInput) {
-    console.warn("Checkin/Checkout inputs not found.");
-    return;
-  }
+  const checkinInput = document.getElementById('booking-checkin');
+  const checkoutInput = document.getElementById('booking-checkout');
 
-  // Destroy previous flatpickr instances if they exist
-  try { if (checkinPicker && checkinPicker.destroy) checkinPicker.destroy(); } catch (e) {}
-  try { if (checkoutPicker && checkoutPicker.destroy) checkoutPicker.destroy(); } catch (e) {}
-  checkinPicker = null; checkoutPicker = null;
+  if (!checkinInput || !checkoutInput) return;
 
-  // Helper to disable booked dates (bookedSet contains YYYY-MM-DD)
-  function disableFn(date) {
-    return bookedSet.has(isoDate(date));
-  }
+  // Destroy previous instances if exist
+  if (checkinPicker && typeof checkinPicker.destroy === 'function') { checkinPicker.destroy(); checkinPicker = null; }
+  if (checkoutPicker && typeof checkoutPicker.destroy === 'function') { checkoutPicker.destroy(); checkoutPicker = null; }
 
-  // Build common options
-  const commonOptions = {
-    dateFormat: "Y-m-d",
-    minDate: "today",
-    allowInput: true,
-    clickOpens: true,
-    disable: [disableFn],
-    onDayCreate: function(dObj, dStr, fpDayElem) {
-      const iso = isoDate(fpDayElem.dateObj);
-      if (bookedSet.has(iso)) {
-        fpDayElem.classList.add('booked');
-      } else {
-        fpDayElem.classList.add('available');
-      }
-    }
+  // disable function: disable days that are booked
+  const disableFn = function(date) {
+    return bookedSet.has(toISODate(date));
   };
 
-  // Initialize checkin
-  checkinPicker = flatpickr(checkinInput, Object.assign({}, commonOptions, {
+  // create checkoutPicker first (we will reference it in checkin onChange)
+  checkoutPicker = flatpickr(checkoutInput, {
+    dateFormat: "Y-m-d",
+    minDate: "today",
+    disable: [disableFn],
+    onDayCreate: function(dObj, dStr, fpDayElem) {
+      const iso = toISODate(fpDayElem.dateObj);
+      if (bookedSet.has(iso)) fpDayElem.classList.add('booked'); else fpDayElem.classList.add('available');
+    }
+  });
+
+  checkinPicker = flatpickr(checkinInput, {
+    dateFormat: "Y-m-d",
+    minDate: "today",
+    disable: [disableFn],
     onChange: function(selectedDates) {
-      if (!selectedDates || !selectedDates.length) return;
+      if (selectedDates.length === 0) return;
       const sel = selectedDates[0];
+      // set checkout min to next day after selected checkin
       const minCheckout = new Date(sel);
       minCheckout.setDate(minCheckout.getDate() + 1);
       if (checkoutPicker) checkoutPicker.set('minDate', minCheckout);
-      // also update native min
-      const checkoutInputEl = document.getElementById('booking-checkout');
-      if (checkoutInputEl) checkoutInputEl.min = isoDate(minCheckout);
-      // If current checkout is before new min, clear it
-      if (checkoutPicker && checkoutPicker.selectedDates && checkoutPicker.selectedDates.length) {
-        const cur = checkoutPicker.selectedDates[0];
-        if (cur <= sel) checkoutPicker.clear();
+
+      // if currently selected checkout is <= sel then clear it
+      const curCheckoutVal = checkoutInput.value;
+      if (curCheckoutVal) {
+        const cur = new Date(curCheckoutVal + 'T00:00:00');
+        if (cur <= sel) {
+          if (checkoutPicker) checkoutPicker.clear();
+          else checkoutInput.value = '';
+        }
       }
+    },
+    onDayCreate: function(dObj, dStr, fpDayElem) {
+      const iso = toISODate(fpDayElem.dateObj);
+      if (bookedSet.has(iso)) fpDayElem.classList.add('booked'); else fpDayElem.classList.add('available');
     }
-  }));
+  });
 
-  // Initialize checkout
-  checkoutPicker = flatpickr(checkoutInput, commonOptions);
+  // If user manually edits native input, keep flatpickr in-sync (rare because inputs are text)
+  checkinInput.addEventListener('input', function () {
+    try {
+      if (checkinPicker) checkinPicker.setDate(this.value, false, "Y-m-d");
+    } catch(e){ /* ignore */ }
+  });
+  checkoutInput.addEventListener('input', function () {
+    try {
+      if (checkoutPicker) checkoutPicker.setDate(this.value, false, "Y-m-d");
+    } catch(e){ /* ignore */ }
+  });
 }
 
-// -------- Add Preferred Check-in Time dropdown & legend to modal (only once) --------
-function ensurePreferredTimeAndLegend() {
-  const form = document.getElementById('booking-form');
-  if (!form) return;
+// ---------- Preferred check-in time picker (clock-style using flatpickr noCalendar + enableTime) ----------
+function setupTimePicker() {
+  const timeInput = document.getElementById('preferred-checkin-time');
+  if (!timeInput) return;
 
-  // Preferred time select
-  if (!document.getElementById('preferred-checkin-time')) {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'form-group';
-    wrapper.innerHTML = `<label for="preferred-checkin-time"><i class="fas fa-clock"></i> Preferred Check-in Time (optional)</label>`;
-    const select = document.createElement('select');
-    select.id = 'preferred-checkin-time';
-    select.name = 'preferred_checkin_time';
-    select.innerHTML = `
-      <option value="">No preference</option>
-      <option value="08:00">08:00 AM</option>
-      <option value="09:00">09:00 AM</option>
-      <option value="10:00">10:00 AM</option>
-      <option value="11:00">11:00 AM</option>
-      <option value="12:00">12:00 PM</option>
-      <option value="14:00">02:00 PM</option>
-      <option value="16:00">04:00 PM</option>
-      <option value="18:00">06:00 PM</option>
-    `;
-    wrapper.appendChild(select);
-
-    // Insert before the date row if possible
-    const checkinRow = document.getElementById('booking-checkin')?.closest('.form-row') || document.getElementById('booking-checkin');
-    if (checkinRow && checkinRow.parentNode) {
-      checkinRow.parentNode.insertBefore(wrapper, checkinRow);
-    } else {
-      form.appendChild(wrapper);
-    }
+  // destroy if exists
+  if (timePicker && typeof timePicker.destroy === 'function') {
+    timePicker.destroy(); timePicker = null;
   }
 
-  // Legend
-  const modalBody = document.querySelector('#booking-modal-bg .modal-body');
-  if (!modalBody) return;
-  if (!modalBody.querySelector('.booking-legend')) {
-    const legend = document.createElement('div');
-    legend.className = 'booking-legend';
-    legend.innerHTML = `
-      <div class="legend-item"><span class="legend-swatch booked"></span> <span>Booked</span></div>
-      <div class="legend-item"><span class="legend-swatch available"></span> <span>Available</span></div>
-    `;
-    // Insert near top of modal body, after header area
-    modalBody.insertBefore(legend, modalBody.firstChild.nextSibling || null);
-  }
+  timePicker = flatpickr(timeInput, {
+    enableTime: true,
+    noCalendar: true,
+    dateFormat: "h:i K",
+    time_24hr: false,
+    minuteIncrement: 15,
+    defaultDate: null,
+    wrap: false,
+    clickOpens: true,
+  });
 }
 
-// -------- Booking Modal open/close --------
-async function openBookingModal(house) {
+// ---------- Ensure the preferred time input & legend visible inside modal ----------
+function ensurePreferredAndLegend() {
+  const prefWrapper = document.getElementById('preferred-time-wrapper');
+  const legend = document.getElementById('booking-legend');
+  if (prefWrapper) prefWrapper.style.display = 'block';
+  if (legend) legend.style.display = 'flex';
+  setupTimePicker();
+}
+
+// ---------- Booking modal open/close ----------
+async function openBookingModal(houseName) {
   try {
-    const modal = document.getElementById('booking-modal-bg');
+    const modalBg = document.getElementById('booking-modal-bg');
     const form = document.getElementById('booking-form');
     const confirmDiv = document.getElementById('booking-confirm');
-    if (!modal || !form || !confirmDiv) {
-      console.warn("Booking modal elements missing.");
-      return;
-    }
+    const title = document.getElementById('modal-title');
 
-    // Reset + show
-    form.reset();
+    if (!modalBg || !form || !title) return;
+
+    // populate hidden house field and title
+    document.getElementById('booking-house').value = houseName;
+    title.textContent = `Book: ${houseName}`;
+
+    // reset UI
     form.style.display = 'block';
     confirmDiv.style.display = 'none';
-    document.getElementById('booking-house').value = house || '';
+    form.reset();
 
-    // Ensure dropdown + legend exist
-    ensurePreferredTimeAndLegend();
+    // show modal
+    modalBg.classList.add('active');
 
-    // Fetch booked dates for the selected house then initialize datepickr
-    await getBookedDates(house || '');
+    // Ensure preferred time and legend exist
+    ensurePreferredAndLegend();
+
+    // fetch existing bookings for this house and setup pickers
+    await getBookedDates(houseName);
     setupDatePickers();
 
-    // Set native input min attributes as fallback
-    const todayISO = isoDate(new Date());
+    // set native min to today as extra fallback
+    const todayISO = toISODate(new Date());
     const checkinInput = document.getElementById('booking-checkin');
     const checkoutInput = document.getElementById('booking-checkout');
-    if (checkinInput) checkinInput.min = todayISO;
-    if (checkoutInput) checkoutInput.min = todayISO;
-
-    // Attach a change listener to native checkin input (we replace node to avoid duplicates)
-    if (checkinInput) {
-      const cloned = checkinInput.cloneNode(true);
-      checkinInput.parentNode.replaceChild(cloned, checkinInput);
-      cloned.addEventListener('change', function () {
-        const val = this.value;
-        if (!val) return;
-        const start = new Date(val);
-        start.setDate(start.getDate() + 1);
-        const minCheckoutStr = isoDate(start);
-        const co = document.getElementById('booking-checkout');
-        if (co) co.min = minCheckoutStr;
-        if (checkoutPicker) checkoutPicker.set('minDate', start);
-        // Clear checkout if before min
-        if (co && co.value) {
-          const cur = new Date(co.value);
-          if (cur <= new Date(val)) {
-            if (checkoutPicker) checkoutPicker.clear();
-            else co.value = '';
-          }
-        }
-      });
-    }
-
-    // Show modal (add active class)
-    modal.classList.add('active');
+    if (checkinInput) checkinInput.setAttribute('min', todayISO);
+    if (checkoutInput) checkoutInput.setAttribute('min', todayISO);
 
   } catch (err) {
-    console.error("openBookingModal error:", err);
+    console.error('openBookingModal error', err);
   }
 }
 
 function closeBookingModal() {
-  const modal = document.getElementById('booking-modal-bg');
-  if (modal) modal.classList.remove('active');
+  const modalBg = document.getElementById('booking-modal-bg');
+  if (modalBg) modalBg.classList.remove('active');
 }
 
-// -------- Booking submit, validation & save --------
+// close on backdrop click or Escape
+document.addEventListener('click', function(e) {
+  const modalBg = document.getElementById('booking-modal-bg');
+  if (modalBg && modalBg.classList.contains('active') && e.target === modalBg) closeBookingModal();
+});
+document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeBookingModal(); });
+
+// ---------- Booking submission ----------
 function showBookingConfirmation(bookingData) {
   const form = document.getElementById('booking-form');
   const confirmDiv = document.getElementById('booking-confirm');
-  const details = document.getElementById('booking-details');
-  if (!form || !confirmDiv || !details) return;
+  const detailsDiv = document.getElementById('booking-details');
+
+  if (!form || !confirmDiv || !detailsDiv) return;
   form.style.display = 'none';
   confirmDiv.style.display = 'block';
-  details.innerHTML = `
+  detailsDiv.innerHTML = `
     <p><strong>Accommodation:</strong> ${bookingData.house}</p>
-    <p><strong>Guest Name:</strong> ${bookingData.name}</p>
+    <p><strong>Guest:</strong> ${bookingData.name}</p>
     <p><strong>Email:</strong> ${bookingData.email}</p>
     <p><strong>Phone:</strong> ${bookingData.phone}</p>
     <p><strong>Guests:</strong> ${bookingData.guests}</p>
-    <p><strong>Check-in:</strong> ${formatDate(bookingData.checkin)}</p>
-    <p><strong>Check-out:</strong> ${formatDate(bookingData.checkout)}</p>
-    ${bookingData.preferred_checkin_time ? `<p><strong>Preferred Check-in Time:</strong> ${bookingData.preferred_checkin_time}</p>` : ''}
-    ${bookingData.access ? `<p><strong>Accessibility:</strong> ${bookingData.access}</p>` : ''}
+    <p><strong>Check-in:</strong> ${bookingData.checkin}</p>
+    <p><strong>Check-out:</strong> ${bookingData.checkout}</p>
+    ${bookingData.preferred_checkin_time ? `<p><strong>Preferred check-in time:</strong> ${bookingData.preferred_checkin_time}</p>` : ''}
     ${bookingData.requests ? `<p><strong>Requests:</strong> ${bookingData.requests}</p>` : ''}
   `;
 }
 
+function showCustomAlert(msg, type='success') {
+  // very small inline alert
+  alert(msg);
+}
+
 function initFormHandlers() {
-  // Email form for reviews
-  const emailForm = document.getElementById('email-form');
-  if (emailForm) {
-    emailForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const email = document.getElementById('email-input').value.trim();
-      if (email && email.includes('@')) {
-        currentUser = { email };
-        showUserInfo(email);
-      } else {
-        showCustomAlert("Please enter a valid email address", "error");
-      }
-    });
-  }
-
-  // Sign out
-  const signOutBtn = document.getElementById('signout-btn');
-  if (signOutBtn) signOutBtn.addEventListener('click', () => {
-    currentUser = null;
-    hideUserInfo();
-    const el = document.getElementById('email-input');
-    if (el) el.value = '';
-  });
-
-  // Review form
-  const reviewForm = document.getElementById('review-form');
-  if (reviewForm) {
-    reviewForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      if (!currentUser) { showCustomAlert("Enter email first to leave a review", "error"); return; }
-      const rating = document.querySelector('input[name="rating"]:checked')?.value || 0;
-      const reviewText = document.getElementById('review-text').value.trim();
-      if (!reviewText) { showCustomAlert("Please write a review", "error"); return; }
-      if (!rating) { showCustomAlert("Please select a rating", "error"); return; }
-
-      const submitBtn = reviewForm.querySelector('[type="submit"]');
-      const originalText = submitBtn.innerHTML;
-      submitBtn.disabled = true; submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
-
-      const reviewData = {
-        review: reviewText,
-        rating,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-        user: { name: currentUser.email.split('@')[0], email: currentUser.email }
-      };
-
-      db.collection('reviews').add(reviewData).then(() => {
-        reviewForm.reset();
-        showCustomAlert("Review submitted — thank you!");
-        return db.collection('notifications').add({
-          type: 'new_review',
-          data: reviewData,
-          status: 'pending',
-          timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        });
-      }).catch(err => {
-        console.error("Error adding review", err);
-        showCustomAlert("Error submitting review. Try again.", "error");
-      }).finally(() => {
-        submitBtn.disabled = false; submitBtn.innerHTML = originalText;
-      });
-    });
-  }
-
-  // Booking form
   const bookingForm = document.getElementById('booking-form');
-  if (bookingForm) {
-    bookingForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const fd = new FormData(bookingForm);
-      const bookingData = Object.fromEntries(fd.entries());
+  if (!bookingForm) return;
 
-      // preferred checkin time (if present)
-      const pref = document.getElementById('preferred-checkin-time');
-      if (pref) bookingData.preferred_checkin_time = pref.value || null;
+  bookingForm.addEventListener('submit', async function (e) {
+    e.preventDefault();
 
-      // Basic validation
-      const required = ['house', 'name', 'guests', 'checkin', 'checkout', 'phone', 'email'];
-      for (const key of required) {
-        if (!bookingData[key] || bookingData[key].toString().trim() === '') {
-          showCustomAlert("Please fill all required booking fields.", "error");
-          return;
-        }
+    // collect form data
+    const formData = new FormData(bookingForm);
+    const bookingData = Object.fromEntries(formData.entries());
+
+    // Normalize keys and required fields
+    const house = bookingData.house || document.getElementById('booking-house').value || '';
+    const name = bookingData.name || '';
+    const guests = bookingData.guests || '';
+    const phone = bookingData.phone || '';
+    const email = bookingData.email || '';
+    const checkin = bookingData.checkin || '';
+    const checkout = bookingData.checkout || '';
+    const preferred = bookingData.preferred_checkin_time || '';
+    const requests = bookingData.requests || '';
+
+    // Basic validation
+    if (!house || !name || !guests || !phone || !email || !checkin || !checkout) {
+      showCustomAlert('Please fill all required fields.', 'error');
+      return;
+    }
+
+    const ci = new Date(checkin + 'T00:00:00');
+    const co = new Date(checkout + 'T00:00:00');
+    const today = new Date(); today.setHours(0,0,0,0);
+    if (isNaN(ci.getTime()) || isNaN(co.getTime())) { showCustomAlert('Invalid dates supplied.', 'error'); return; }
+    if (ci < today) { showCustomAlert('Check-in cannot be in the past.', 'error'); return; }
+    if (co <= ci) { showCustomAlert('Check-out must be after check-in.', 'error'); return; }
+
+    // server-side overlap validation against bookedSet
+    for (let d = new Date(ci); d < co; d.setDate(d.getDate() + 1)) {
+      if (bookedSet.has(toISODate(d))) {
+        showCustomAlert('Selected dates overlap with an existing booking. Choose different dates.', 'error');
+        return;
       }
+    }
 
-      const checkinDate = new Date(bookingData.checkin);
-      const checkoutDate = new Date(bookingData.checkout);
-      const today = new Date(); today.setHours(0,0,0,0);
+    // Save booking to Firestore
+    const submitBtn = bookingForm.querySelector('[type="submit"]');
+    const origText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = 'Processing...';
 
-      if (isNaN(checkinDate.getTime()) || isNaN(checkoutDate.getTime())) {
-        showCustomAlert("Invalid dates provided.", "error"); return;
+    const payload = {
+      house, // keep house for backwards compatibility
+      houseId: house,
+      name,
+      guestName: name,
+      guests,
+      phone,
+      email,
+      checkin: toISODate(ci),
+      checkout: toISODate(co),
+      checkIn: toISODate(ci),
+      checkOut: toISODate(co),
+      preferred_checkin_time: preferred || null,
+      checkInTime: preferred || null,
+      requests: requests || null,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      status: 'pending'
+    };
+
+    try {
+      await db.collection('bookings').add(payload);
+      // locally block these days so UI updates immediately
+      for (let d = new Date(ci); d < co; d.setDate(d.getDate() + 1)) {
+        bookedSet.add(toISODate(d));
       }
-      if (checkinDate < today) { showCustomAlert("Check-in date cannot be in the past.", "error"); return; }
-      if (checkoutDate <= checkinDate) { showCustomAlert("Check-out must be after check-in.", "error"); return; }
+      setupDatePickers();
 
-      // Server-side overlap check against current bookedSet
-      for (let d = new Date(checkinDate); d < checkoutDate; d.setDate(d.getDate() + 1)) {
-        if (bookedSet.has(isoDate(d))) {
-          showCustomAlert("Selected dates overlap with an existing booking. Choose different dates.", "error");
-          return;
-        }
-      }
-
-      // Save booking
-      const submitBtn = bookingForm.querySelector('[type="submit"]');
-      const originalText = submitBtn.innerHTML;
-      submitBtn.disabled = true; submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-
-      try {
-        // Save booking doc
-        await db.collection('bookings').add({
-          ...bookingData,
-          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-          status: 'pending'
-        });
-
-        // notify admin
-        await db.collection('notifications').add({
-          type: 'new_booking',
-          data: { ...bookingData },
-          status: 'pending',
-          timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        });
-
-        // Show in-UI confirmation
-        showBookingConfirmation(bookingData);
-
-        // Locally block new dates immediately in this session
-        for (let d = new Date(checkinDate); d < checkoutDate; d.setDate(d.getDate() + 1)) {
-          bookedSet.add(isoDate(d));
-        }
-        // Rebuild pickers to reflect new local blocks
-        setupDatePickers();
-
-      } catch (err) {
-        console.error("Error saving booking:", err);
-        showCustomAlert("Error processing booking. Try again.", "error");
-      } finally {
-        submitBtn.disabled = false; submitBtn.innerHTML = originalText;
-      }
-    });
-  }
-
-  // Contact form
-  const contactForm = document.getElementById('contact-form');
-  if (contactForm) {
-    contactForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const name = document.getElementById('contact-name').value.trim();
-      const email = document.getElementById('contact-email').value.trim();
-      const message = document.getElementById('contact-message').value.trim();
-      if (!name || !email || !message) { showCustomAlert("Please fill all contact fields.", "error"); return; }
-
-      const submitBtn = contactForm.querySelector('[type="submit"]');
-      const originalText = submitBtn.innerHTML;
-      submitBtn.disabled = true; submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
-
-      db.collection('messages').add({
-        name, email, message, timestamp: firebase.firestore.FieldValue.serverTimestamp(), status: 'new'
-      }).then(() => {
-        contactForm.reset();
-        showCustomAlert("Message sent — we'll be in touch!");
-        return db.collection('notifications').add({
-          type: 'new_message',
-          data: { name, email, message },
-          status: 'pending',
-          timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        });
-      }).catch(err => {
-        console.error("Error sending message:", err);
-        showCustomAlert("Error sending message. Try again.", "error");
-      }).finally(() => {
-        submitBtn.disabled = false; submitBtn.innerHTML = originalText;
+      showBookingConfirmation({
+        house, name, guests, phone, email, checkin: toISODate(ci), checkout: toISODate(co),
+        preferred_checkin_time: preferred, requests
       });
-    });
-  }
-}
 
-// -------- Testimonials loader --------
-function renderTestimonials(reviews) {
-  const grid = document.getElementById('testimonials-grid');
-  if (!grid) return;
-  if (!reviews || reviews.length === 0) {
-    grid.innerHTML = `<p>No reviews yet.</p>`;
-    return;
-  }
-  let html = '';
-  reviews.slice(0,6).forEach(r => {
-    const name = r.user?.name || (r.user?.email ? r.user.email.split('@')[0] : 'Guest');
-    const date = r.timestamp ? new Date(r.timestamp.toDate()).toLocaleDateString() : '';
-    html += `
-      <div class="testimonial-card">
-        <div class="testimonial-rating">${'★'.repeat(Number(r.rating || 5))}</div>
-        <p class="testimonial-text">"${r.review}"</p>
-        <div class="testimonial-author">
-          <div class="author-info"><h4>${name}</h4><span>${date}</span></div>
-        </div>
-      </div>
-    `;
-  });
-  grid.innerHTML = html;
-}
+      // optional: add a notification doc for admin
+      await db.collection('notifications').add({
+        type: 'new_booking',
+        data: payload,
+        status: 'pending',
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
 
-function loadReviews() {
-  db.collection('reviews').orderBy('timestamp', 'desc').onSnapshot(snapshot => {
-    const reviews = [];
-    snapshot.forEach(doc => reviews.push({ id: doc.id, ...doc.data() }));
-    renderTestimonials(reviews);
-  }, err => {
-    console.error("loadReviews error:", err);
-    renderTestimonials([]);
+    } catch (err) {
+      console.error('Error saving booking:', err);
+      showCustomAlert('Failed to save booking. Try again.', 'error');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = origText;
+    }
   });
 }
 
-// -------- Small UI helpers & init routines --------
-function showUserInfo(email) {
-  const userInfo = document.getElementById('user-info');
-  const userName = document.getElementById('user-name');
-  const userEmail = document.getElementById('user-email');
-  const emailForm = document.getElementById('email-form');
-  const reviewForm = document.getElementById('review-form');
-  if (userInfo && userName && userEmail && emailForm && reviewForm) {
-    userInfo.style.display = 'block';
-    userName.textContent = email.split('@')[0];
-    userEmail.textContent = email;
-    reviewForm.style.display = 'block';
-    emailForm.style.display = 'none';
-  }
-}
-function hideUserInfo() {
-  const userInfo = document.getElementById('user-info');
-  const emailForm = document.getElementById('email-form');
-  const reviewForm = document.getElementById('review-form');
-  if (userInfo && emailForm && reviewForm) {
-    userInfo.style.display = 'none';
-    reviewForm.style.display = 'none';
-    emailForm.style.display = 'block';
-  }
-}
-
-function initMobileNav() {
-  const hamburger = document.getElementById('hamburger');
-  const navMenu = document.getElementById('nav-menu');
-  if (!hamburger || !navMenu) return;
-  hamburger.addEventListener('click', (e) => { e.preventDefault(); navMenu.classList.toggle('active'); hamburger.classList.toggle('active'); });
-  navMenu.querySelectorAll('.nav-link').forEach(a => a.addEventListener('click', () => { navMenu.classList.remove('active'); hamburger.classList.remove('active'); }));
-}
-
-function initModalHandlers() {
-  const modal = document.getElementById('booking-modal-bg');
-  if (modal) {
-    modal.addEventListener('click', (e) => { if (e.target === modal) closeBookingModal(); });
-  }
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeBookingModal(); });
-}
-
-function initSlideshow() {
-  let slideIndex = 0;
-  const slides = document.querySelectorAll('.slide');
-  const indicators = document.querySelectorAll('.indicator');
-  if (!slides.length) return;
-  function show(i) {
-    slides.forEach(s => s.classList.remove('active'));
-    indicators.forEach(ind => ind.classList.remove('active'));
-    slides[i].classList.add('active');
-    if (indicators[i]) indicators[i].classList.add('active');
-  }
-  setInterval(() => { slideIndex = (slideIndex + 1) % slides.length; show(slideIndex); }, 5000);
-}
-
-// Admin modal (simple local check)
-function openAdminModal() { const modal = document.getElementById('admin-login-modal'); if (modal) modal.style.display = 'flex'; }
-function closeAdminModal() { const modal = document.getElementById('admin-login-modal'); if (modal) { modal.style.display = 'none'; const f = document.getElementById('admin-login-form'); if (f) f.reset(); const e = document.getElementById('admin-login-error'); if (e) e.style.display = 'none'; } }
-function handleAdminLogin(e) {
-  e.preventDefault();
-  const username = document.getElementById('admin-username').value.trim();
-  const password = document.getElementById('admin-password').value;
-  const errorDiv = document.getElementById('admin-login-error');
-  const creds = { username: 'gonahhomes0@gmail.com', password: 'gonahhomes@0799466723' };
-  if (username === creds.username && password === creds.password) {
-    closeAdminModal();
-    window.open('backend/dashboard.html', '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
-  } else {
-    if (errorDiv) { errorDiv.style.display = 'block'; errorDiv.textContent = 'Invalid credentials. Please try again.'; }
-  }
-}
-
-function initAdminAccess() {
-  const adminBtn = document.getElementById('admin-access-btn'); if (adminBtn) adminBtn.addEventListener('click', openAdminModal);
-  const adminForm = document.getElementById('admin-login-form'); if (adminForm) adminForm.addEventListener('submit', handleAdminLogin);
-  const adminModal = document.getElementById('admin-login-modal'); if (adminModal) adminModal.addEventListener('click', (e) => { if (e.target === adminModal) closeAdminModal(); });
-}
-
-// Smooth scrolling for internal anchors
-function initSmoothScrolling() {
-  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', function (e) {
-      e.preventDefault();
-      const target = document.querySelector(this.getAttribute('href'));
-      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-  });
-}
-
-// Init everything on DOMContentLoaded
+// ---------- Init on DOMContentLoaded ----------
 document.addEventListener('DOMContentLoaded', () => {
-  initMobileNav();
-  initFormHandlers();
-  initSmoothScrolling();
-  initModalHandlers();
-  initAdminAccess();
-  initSlideshow();
-  loadReviews();
-  hideUserInfo();
-  console.log("script.js initialized — Flatpickr and bookings ready.");
-});
+  // wire up global helpers used by your HTML buttons
+  window.openBookingModal = openBookingModal;
+  window.closeBookingModal = closeBookingModal;
 
-// Expose functions for HTML buttons
-window.openBookingModal = openBookingModal;
-window.closeBookingModal = closeBookingModal;
-window.openAdminModal = openAdminModal;
-window.closeAdminModal = closeAdminModal;
-window.scrollToSection = function(id){ const el = document.getElementById(id); if (el) el.scrollIntoView({behavior:'smooth'}); };
-window.currentSlide = function(i){ /* optional: used by indicators */ };
+  // init forms
+  initFormHandlers();
+
+  // If you open modal programmatically, it will call getBookedDates and setup pickers
+  console.log('script.js loaded: date/time pickers ready');
+});
