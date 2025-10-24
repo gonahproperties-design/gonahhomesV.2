@@ -28,6 +28,7 @@ let bookedDates = [];      // array of YYYY-MM-DD strings for current house
 let bookedSet = new Set(); // quick lookup
 let checkinPicker = null;
 let checkoutPicker = null;
+let timePicker = null;     // preferred check-in time flatpickr instance
 
 // -------- Inject CSS for flatpickr custom classes & legend (once) --------
 (function injectStyles() {
@@ -51,7 +52,6 @@ let checkoutPicker = null;
       transform: translateX(-50%);
       font-size: 9px;
       color: #666;
-      background: rgba(255,255,255,0.0);
       padding: 0 2px;
     }
     /* Available day visual (green underline) */
@@ -86,6 +86,9 @@ let checkoutPicker = null;
     /* Modal active class (simple helper) */
     #booking-modal-bg { display: none; }
     #booking-modal-bg.active { display: block; }
+
+    /* Prevent typing caret in date fields (user must use picker) */
+    input.flatpickr-input[readonly] { cursor: pointer; }
   `;
   document.head.appendChild(style);
 })();
@@ -158,28 +161,34 @@ async function getBookedDates(houseName) {
 
 // -------- Flatpickr setup / re-setup --------
 function setupDatePickers() {
-  const checkinInput = document.getElementById("booking-checkin");
-  const checkoutInput = document.getElementById("booking-checkout");
-  if (!checkinInput || !checkoutInput) {
+  const checkinInputEl = document.getElementById("booking-checkin");
+  const checkoutInputEl = document.getElementById("booking-checkout");
+  if (!checkinInputEl || !checkoutInputEl) {
     console.warn("Checkin/Checkout inputs not found.");
     return;
   }
+
+  // Make inputs text & readonly to force Flatpickr popup and prevent native date UI
+  checkinInputEl.type = 'text';
+  checkoutInputEl.type = 'text';
+  checkinInputEl.setAttribute('readonly', 'readonly');
+  checkoutInputEl.setAttribute('readonly', 'readonly');
 
   // Destroy previous flatpickr instances if they exist
   try { if (checkinPicker && checkinPicker.destroy) checkinPicker.destroy(); } catch (e) {}
   try { if (checkoutPicker && checkoutPicker.destroy) checkoutPicker.destroy(); } catch (e) {}
   checkinPicker = null; checkoutPicker = null;
 
-  // Helper to disable booked dates (bookedSet contains YYYY-MM-DD)
+  // Helper to disable booked dates
   function disableFn(date) {
     return bookedSet.has(isoDate(date));
   }
 
-  // Build common options
+  // Common options for both pickers
   const commonOptions = {
     dateFormat: "Y-m-d",
     minDate: "today",
-    allowInput: true,
+    allowInput: false,       // force use of picker (no manual typing)
     clickOpens: true,
     disable: [disableFn],
     onDayCreate: function(dObj, dStr, fpDayElem) {
@@ -189,20 +198,22 @@ function setupDatePickers() {
       } else {
         fpDayElem.classList.add('available');
       }
-    }
+    },
+    // Make the calendar append inside modal for correct z-index stacking
+    appendTo: document.querySelector('#booking-modal-bg .modal') || document.body
   };
 
-  // Initialize checkin
-  checkinPicker = flatpickr(checkinInput, Object.assign({}, commonOptions, {
+  // Initialize checkinPicker first (it will set checkout min on change)
+  checkinPicker = flatpickr(checkinInputEl, Object.assign({}, commonOptions, {
     onChange: function(selectedDates) {
       if (!selectedDates || !selectedDates.length) return;
       const sel = selectedDates[0];
       const minCheckout = new Date(sel);
       minCheckout.setDate(minCheckout.getDate() + 1);
       if (checkoutPicker) checkoutPicker.set('minDate', minCheckout);
-      // also update native min
-      const checkoutInputEl = document.getElementById('booking-checkout');
-      if (checkoutInputEl) checkoutInputEl.min = isoDate(minCheckout);
+      // update native min fallback (if any)
+      const checkoutNative = document.querySelector('#booking-checkout');
+      if (checkoutNative) checkoutNative.min = isoDate(minCheckout);
       // If current checkout is before new min, clear it
       if (checkoutPicker && checkoutPicker.selectedDates && checkoutPicker.selectedDates.length) {
         const cur = checkoutPicker.selectedDates[0];
@@ -211,43 +222,54 @@ function setupDatePickers() {
     }
   }));
 
-  // Initialize checkout
-  checkoutPicker = flatpickr(checkoutInput, commonOptions);
+  // Initialize checkoutPicker
+  checkoutPicker = flatpickr(checkoutInputEl, Object.assign({}, commonOptions, {}));
 }
 
-// -------- Add Preferred Check-in Time dropdown & legend to modal (only once) --------
+// -------- Add Preferred Check-in Time (clock-style) & legend to modal (only once) --------
 function ensurePreferredTimeAndLegend() {
   const form = document.getElementById('booking-form');
   if (!form) return;
 
-  // Preferred time select
+  // Preferred time input: use a text input enhanced by flatpickr (time-only)
   if (!document.getElementById('preferred-checkin-time')) {
     const wrapper = document.createElement('div');
     wrapper.className = 'form-group';
+    wrapper.style.marginTop = '0.5rem';
     wrapper.innerHTML = `<label for="preferred-checkin-time"><i class="fas fa-clock"></i> Preferred Check-in Time (optional)</label>`;
-    const select = document.createElement('select');
-    select.id = 'preferred-checkin-time';
-    select.name = 'preferred_checkin_time';
-    select.innerHTML = `
-      <option value="">No preference</option>
-      <option value="08:00">08:00 AM</option>
-      <option value="09:00">09:00 AM</option>
-      <option value="10:00">10:00 AM</option>
-      <option value="11:00">11:00 AM</option>
-      <option value="12:00">12:00 PM</option>
-      <option value="14:00">02:00 PM</option>
-      <option value="16:00">04:00 PM</option>
-      <option value="18:00">06:00 PM</option>
-    `;
-    wrapper.appendChild(select);
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.id = 'preferred-checkin-time';
+    input.name = 'preferred_checkin_time';
+    input.placeholder = 'Select time';
+    input.className = 'flatpickr-input';
+    input.setAttribute('readonly', 'readonly'); // force using the time picker UI
+    wrapper.appendChild(input);
 
     // Insert before the date row if possible
     const checkinRow = document.getElementById('booking-checkin')?.closest('.form-row') || document.getElementById('booking-checkin');
     if (checkinRow && checkinRow.parentNode) {
       checkinRow.parentNode.insertBefore(wrapper, checkinRow);
     } else {
-      form.appendChild(wrapper);
+      // fallback append at the end of the form
+      form.insertBefore(wrapper, form.firstChild);
     }
+
+    // Initialize flatpickr time-only on that input
+    // Destroy existing if any
+    try { if (timePicker && timePicker.destroy) timePicker.destroy(); } catch (e) {}
+    timePicker = flatpickr(input, {
+      enableTime: true,
+      noCalendar: true,
+      dateFormat: "h:i K", // 12-hour with AM/PM
+      time_24hr: false,
+      allowInput: false,
+      defaultHour: 14,
+      defaultMinute: 0,
+      minuteIncrement: 15,
+      clickOpens: true,
+      appendTo: document.querySelector('#booking-modal-bg .modal') || document.body
+    });
   }
 
   // Legend
@@ -285,22 +307,24 @@ async function openBookingModal(house) {
     // Ensure dropdown + legend exist
     ensurePreferredTimeAndLegend();
 
-    // Fetch booked dates for the selected house then initialize datepickr
+    // Fetch booked dates for the selected house then initialize datepickers
     await getBookedDates(house || '');
     setupDatePickers();
 
-    // Set native input min attributes as fallback
+    // Set native input min attributes as fallback (useful for some browsers)
     const todayISO = isoDate(new Date());
     const checkinInput = document.getElementById('booking-checkin');
     const checkoutInput = document.getElementById('booking-checkout');
     if (checkinInput) checkinInput.min = todayISO;
     if (checkoutInput) checkoutInput.min = todayISO;
 
-    // Attach a change listener to native checkin input (we replace node to avoid duplicates)
-    if (checkinInput) {
+    // Attach a change listener to checkin native element (best-effort) without duplicating handlers:
+    // We'll replace node to clean previous listeners, then add one that updates checkout min.
+    if (checkinInput && checkinInput.parentNode) {
       const cloned = checkinInput.cloneNode(true);
       checkinInput.parentNode.replaceChild(cloned, checkinInput);
-      cloned.addEventListener('change', function () {
+      const newCheckin = document.getElementById('booking-checkin');
+      newCheckin.addEventListener('change', function () {
         const val = this.value;
         if (!val) return;
         const start = new Date(val);
@@ -323,6 +347,7 @@ async function openBookingModal(house) {
     // Show modal (add active class)
     modal.classList.add('active');
 
+    // Ensure flatpickr calendars open above other elements (z-index) by appending to modal; done in options
   } catch (err) {
     console.error("openBookingModal error:", err);
   }
