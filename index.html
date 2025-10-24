@@ -1,287 +1,599 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gonah Homes - Coastal Accommodations in Mombasa</title>
-  <link rel="stylesheet" href="styles.css" />
-
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gonah Homes - Premium Coastal Accommodations in Mombasa</title>
+  <link rel="stylesheet" href="styles.css">
   <!-- Font Awesome for icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-
-  <!-- Flatpickr CSS for calendar & time pickers -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-
-  <style>
-    body {
-      font-family: 'Poppins', sans-serif;
-      margin: 0;
-      background-color: #f7f7f7;
-      color: #333;
-    }
-
-    header {
-      background: url('images/header-bg.jpg') center/cover no-repeat;
-      color: white;
-      padding: 80px 20px;
-      text-align: center;
-    }
-
-    header h1 {
-      font-size: 2.5rem;
-      margin-bottom: 10px;
-    }
-
-    header p {
-      font-size: 1.2rem;
-    }
-
-    .accommodations {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 20px;
-      padding: 40px 20px;
-      max-width: 1200px;
-      margin: auto;
-    }
-
-    .accommodation {
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      overflow: hidden;
-      transition: transform 0.2s ease;
-    }
-
-    .accommodation:hover {
-      transform: translateY(-5px);
-    }
-
-    .accommodation img {
-      width: 100%;
-      height: 200px;
-      object-fit: cover;
-    }
-
-    .accommodation-content {
-      padding: 15px;
-    }
-
-    .accommodation-content h3 {
-      margin: 0;
-      font-size: 1.2rem;
-    }
-
-    .accommodation-content p {
-      font-size: 0.9rem;
-      color: #555;
-    }
-
-    .book-btn {
-      display: inline-block;
-      background-color: #008080;
-      color: white;
-      padding: 10px 15px;
-      margin-top: 10px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background 0.3s ease;
-    }
-
-    .book-btn:hover {
-      background-color: #006666;
-    }
-
-    /* Modal styles */
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background-color: rgba(0,0,0,0.5);
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
-
-    .modal-content {
-      background: white;
-      padding: 25px;
-      border-radius: 10px;
-      width: 90%;
-      max-width: 400px;
-      position: relative;
-    }
-
-    .close-btn {
-      position: absolute;
-      top: 10px; right: 15px;
-      font-size: 20px;
-      cursor: pointer;
-      color: #444;
-    }
-
-    .modal-content h2 {
-      margin-bottom: 15px;
-    }
-
-    .modal-content label {
-      display: block;
-      font-weight: 600;
-      margin: 10px 0 5px;
-    }
-
-    .modal-content input, .modal-content select {
-      width: 100%;
-      padding: 8px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-    }
-
-    .submit-btn {
-      background-color: #008080;
-      color: white;
-      border: none;
-      padding: 10px;
-      width: 100%;
-      border-radius: 6px;
-      margin-top: 15px;
-      cursor: pointer;
-    }
-
-    .submit-btn:hover {
-      background-color: #006666;
-    }
-
-    footer {
-      background: #008080;
-      color: white;
-      text-align: center;
-      padding: 20px;
-      margin-top: 40px;
-    }
-  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <header>
-    <h1>Welcome to Gonah Homes</h1>
-    <p>Premium Coastal Accommodations in Mombasa</p>
+  <!-- Navigation Header -->
+  <header class="main-header">
+    <nav class="navbar">
+      <div class="nav-container">
+        <div class="nav-logo">
+          <h2>Gonah Homes</h2>
+        </div>
+        <div class="nav-menu" id="nav-menu">
+          <a href="#hero" class="nav-link">Home</a>
+          <a href="#accommodations" class="nav-link">Accommodations</a>
+          <a href="#testimonials" class="nav-link">Reviews</a>
+          <a href="#contact" class="nav-link">Contact</a>
+          <a href="admin.html" class="nav-link admin-link">
+            <i class="fas fa-lock"></i> Admin
+          </a>
+        </div>
+        <div class="hamburger" id="hamburger">
+          <span class="bar"></span>
+          <span class="bar"></span>
+          <span class="bar"></span>
+        </div>
+      </div>
+    </nav>
   </header>
 
-  <section class="accommodations">
-    <div class="accommodation">
-      <img src="images/beach-apartment.jpg" alt="Beach Apartment">
-      <div class="accommodation-content">
-        <h3>Beach Apartment</h3>
-        <p>From KES 4,000/night</p>
-        <button class="book-btn" data-room="Beach Apartment">Book Now</button>
-      </div>
-    </div>
-
-    <div class="accommodation">
-      <img src="images/luxury-suite.jpg" alt="Luxury Suite">
-      <div class="accommodation-content">
-        <h3>Luxury Suite</h3>
-        <p>From KES 6,500/night</p>
-        <button class="book-btn" data-room="Luxury Suite">Book Now</button>
-      </div>
-    </div>
-
-    <div class="accommodation">
-      <img src="images/garden-villa.jpg" alt="Garden Villa">
-      <div class="accommodation-content">
-        <h3>Garden Villa</h3>
-        <p>From KES 5,500/night</p>
-        <button class="book-btn" data-room="Garden Villa">Book Now</button>
+  <!-- Hero Section -->
+  <section id="hero" class="hero">
+    <div class="hero-background">
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <div class="container">
+          <h1 class="hero-title">Gonah Homes</h1>
+          <p class="hero-subtitle">Your Premium Home Away From Home</p>
+          <p class="hero-description">
+            Discover affordable, reliable, and stylish accommodations in Mombasa & the Kenyan Coast. 
+            Experience comfort, luxury, and unforgettable memories with Gonah Homes.
+          </p>
+          <div class="hero-cta">
+            <button class="btn btn-primary" onclick="scrollToSection('accommodations')">
+              <i class="fas fa-home"></i> Explore Accommodations
+            </button>
+            <button class="btn btn-outline" onclick="scrollToSection('contact')">
+              <i class="fas fa-phone"></i> Contact Us
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </section>
 
+  <!-- Featured Stay Section -->
+  <section id="featured-stay" class="featured-stay">
+    <div class="container">
+      <div class="section-header">
+        <h2>Featured Stay of the Month</h2>
+        <p>Experience luxury at its finest</p>
+      </div>
+      <div class="featured-card">
+        <div class="featured-image">
+          <img src="https://images.unsplash.com/photo-1571624436279-b272aff752b5?w=600&h=400&fit=crop" alt="Luxury Maisonette" />
+          <div class="featured-badge">Featured</div>
+        </div>
+        <div class="featured-content">
+          <h3>Luxury Maisonette</h3>
+          <p class="featured-description">
+            Elegant duplex maisonette with private garden, premium amenities, and stunning coastal views. 
+            Perfect for families or groups seeking the ultimate coastal experience.
+          </p>
+          <div class="featured-features">
+            <div class="feature">
+              <i class="fas fa-bed"></i>
+              <span>4 Bedrooms</span>
+            </div>
+            <div class="feature">
+              <i class="fas fa-bath"></i>
+              <span>3 Bathrooms</span>
+            </div>
+            <div class="feature">
+              <i class="fas fa-leaf"></i>
+              <span>Private Garden</span>
+            </div>
+            <div class="feature">
+              <i class="fas fa-wifi"></i>
+              <span>Free WiFi</span>
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="openBookingModal('Luxury Maisonette')">
+            <i class="fas fa-calendar-check"></i> Book Now
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Why Choose Us Section -->
+  <section id="why-choose-us" class="why-choose-us">
+    <div class="container">
+      <div class="section-header">
+        <h2>Why Choose Gonah Homes?</h2>
+        <p>Experience the difference with our premium services</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i class="fas fa-star"></i>
+          </div>
+          <h3>Premium Quality</h3>
+          <p>Luxurious accommodations with modern amenities and stylish furnishing for your comfort.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i class="fas fa-map-marker-alt"></i>
+          </div>
+          <h3>Prime Locations</h3>
+          <p>Strategic locations near beaches, attractions, and city centers for easy exploration.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i class="fas fa-headset"></i>
+          </div>
+          <h3>24/7 Support</h3>
+          <p>Round-the-clock customer support to ensure your stay is comfortable and worry-free.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i class="fas fa-shield-alt"></i>
+          </div>
+          <h3>Secure Booking</h3>
+          <p>Safe and secure booking process with flexible payment options and instant confirmation.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Accommodations Section -->
+  <section id="accommodations" class="accommodations">
+    <div class="container">
+      <div class="section-header">
+        <h2>Our Accommodations</h2>
+        <p>Find the perfect space for your coastal getaway</p>
+      </div>
+      <div class="accommodations-grid">
+        <div class="accommodation-card">
+          <div class="card-image">
+            <img src="https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=400&h=300&fit=crop" alt="Studio Apartment" />
+            <div class="card-badge">Popular</div>
+          </div>
+          <div class="card-content">
+            <h3>Studio Apartment</h3>
+            <p>Cozy and modern studio perfect for singles or couples. Includes open plan living, kitchenette, WiFi, and Smart TV.</p>
+            <div class="card-features">
+              <div class="feature">
+                <i class="fas fa-user"></i>
+                <span>1-2 Guests</span>
+              </div>
+              <div class="feature">
+                <i class="fas fa-wifi"></i>
+                <span>Free WiFi</span>
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="openBookingModal('Studio Apartment')">
+              <i class="fas fa-calendar-check"></i> Book Now
+            </button>
+          </div>
+        </div>
+
+        <div class="accommodation-card">
+          <div class="card-image">
+            <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=400&h=300&fit=crop" alt="One Bedroom" />
+          </div>
+          <div class="card-content">
+            <h3>One Bedroom Apartment</h3>
+            <p>Comfortable one-bedroom apartment with separate living area, full kitchen, and dedicated workspace.</p>
+            <div class="card-features">
+              <div class="feature">
+                <i class="fas fa-users"></i>
+                <span>2-3 Guests</span>
+              </div>
+              <div class="feature">
+                <i class="fas fa-utensils"></i>
+                <span>Full Kitchen</span>
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="openBookingModal('One Bedroom Apartment')">
+              <i class="fas fa-calendar-check"></i> Book Now
+            </button>
+          </div>
+        </div>
+
+        <div class="accommodation-card">
+          <div class="card-image">
+            <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400&h=300&fit=crop" alt="Two Bedroom" />
+          </div>
+          <div class="card-content">
+            <h3>Two Bedroom Apartment</h3>
+            <p>Spacious two-bedroom, ideal for families or friends. Includes full kitchen, living room, and two bathrooms.</p>
+            <div class="card-features">
+              <div class="feature">
+                <i class="fas fa-users"></i>
+                <span>4-5 Guests</span>
+              </div>
+              <div class="feature">
+                <i class="fas fa-bath"></i>
+                <span>2 Bathrooms</span>
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="openBookingModal('Two Bedroom Apartment')">
+              <i class="fas fa-calendar-check"></i> Book Now
+            </button>
+          </div>
+        </div>
+
+        <div class="accommodation-card">
+          <div class="card-image">
+            <img src="https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop" alt="Three Bedroom" />
+          </div>
+          <div class="card-content">
+            <h3>Three Bedroom Apartment</h3>
+            <p>Large three-bedroom apartment for families or groups. Full kitchen, dining area, and spacious balcony.</p>
+            <div class="card-features">
+              <div class="feature">
+                <i class="fas fa-users"></i>
+                <span>6-7 Guests</span>
+              </div>
+              <div class="feature">
+                <i class="fas fa-balcony"></i>
+                <span>Balcony</span>
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="openBookingModal('Three Bedroom Apartment')">
+              <i class="fas fa-calendar-check"></i> Book Now
+            </button>
+          </div>
+        </div>
+
+        <div class="accommodation-card">
+          <div class="card-image">
+            <img src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400&h=300&fit=crop" alt="Four Bedroom" />
+          </div>
+          <div class="card-content">
+            <h3>Four Bedroom Apartment</h3>
+            <p>Luxurious four-bedroom for large families or groups. Multiple balconies, 3 bathrooms, premium furnishing.</p>
+            <div class="card-features">
+              <div class="feature">
+                <i class="fas fa-users"></i>
+                <span>8+ Guests</span>
+              </div>
+              <div class="feature">
+                <i class="fas fa-crown"></i>
+                <span>Premium</span>
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="openBookingModal('Four Bedroom Apartment')">
+              <i class="fas fa-calendar-check"></i> Book Now
+            </button>
+          </div>
+        </div>
+
+        <div class="accommodation-card featured">
+          <div class="card-image">
+            <img src="https://images.unsplash.com/photo-1571624436279-b272aff752b5?w=400&h=300&fit=crop" alt="Maisonette" />
+            <div class="card-badge">Premium</div>
+          </div>
+          <div class="card-content">
+            <h3>Luxury Maisonette</h3>
+            <p>Elegant duplex maisonette with private garden and top amenities. Perfect for a premium coastal experience.</p>
+            <div class="card-features">
+              <div class="feature">
+                <i class="fas fa-home"></i>
+                <span>Duplex</span>
+              </div>
+              <div class="feature">
+                <i class="fas fa-leaf"></i>
+                <span>Garden</span>
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="openBookingModal('Luxury Maisonette')">
+              <i class="fas fa-calendar-check"></i> Book Now
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials Section -->
+  <section id="testimonials" class="testimonials">
+    <div class="container">
+      <div class="section-header">
+        <h2>What Our Guests Say</h2>
+        <p>Real experiences from our valued customers</p>
+      </div>
+      <div class="testimonials-grid" id="testimonials-grid">
+        <!-- Testimonials will be loaded here -->
+      </div>
+      <div class="reviews-section">
+        <div class="reviews-header">
+          <h3>Leave Your Review</h3>
+          <p>Share your experience with future guests</p>
+        </div>
+        <div class="review-form-container">
+          <form id="email-form" class="email-form">
+            <div class="form-group">
+              <label for="email-input">
+                <i class="fas fa-envelope"></i> Enter your email to leave a review
+              </label>
+              <div class="input-group">
+                <input type="email" id="email-input" placeholder="your.email@example.com" required>
+                <button type="submit" class="btn btn-primary">Continue</button>
+              </div>
+            </div>
+          </form>
+
+          <div id="user-info" class="user-info" style="display: none;">
+            <div class="user-details">
+              <i class="fas fa-user-circle"></i>
+              <div>
+                <span id="user-name"></span>
+                <span id="user-email"></span>
+              </div>
+              <button id="signout-btn" class="btn btn-outline btn-sm">Sign Out</button>
+            </div>
+          </div>
+
+          <form id="review-form" class="review-form" style="display: none;">
+            <div class="form-grqoup">
+              <label>Rate your experience</label>
+              <div class="star-rating">
+                <input type="radio" name="rating" value="5" id="star5">
+                <label for="star5"><i class="fas fa-star"></i></label>
+                <input type="radio" name="rating" value="4" id="star4">
+                <label for="star4"><i class="fas fa-star"></i></label>
+                <input type="radio" name="rating" value="3" id="star3">
+                <label for="star3"><i class="fas fa-star"></i></label>
+                <input type="radio" name="rating" value="2" id="star2">
+                <label for="star2"><i class="fas fa-star"></i></label>
+                <input type="radio" name="rating" value="1" id="star1">
+                <label for="star1"><i class="fas fa-star"></i></label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="review-text">Your Review</label>
+              <textarea id="review-text" placeholder="Tell us about your experience..." rows="4" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-paper-plane"></i> Submit Review
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quick Links Section -->
+  <section id="quick-links" class="quick-links">
+    <div class="container">
+      <div class="quick-links-grid">
+        <div class="quick-link-card">
+          <div class="quick-link-icon">
+            <i class="fas fa-file-alt"></i>
+          </div>
+          <h3>Policies</h3>
+          <p>Check our booking and cancellation policies</p>
+          <a href="policies.html" class="btn btn-outline">View Policies</a>
+        </div>
+        <div class="quick-link-card">
+          <div class="quick-link-icon">
+            <i class="fas fa-map-marked-alt"></i>
+          </div>
+          <h3>Local Guide</h3>
+          <p>Discover the best of Mombasa and the coast</p>
+          <a href="local_recommendations.html" class="btn btn-outline">Explore</a>
+        </div>
+        <div class="quick-link-card">
+          <div class="quick-link-icon">
+            <i class="fas fa-blog"></i>
+          </div>
+          <h3>Blog</h3>
+          <p>Travel tips and coastal experiences</p>
+          <a href="blog.html" class="btn btn-outline">Read Blog</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact Section -->
+  <section id="contact" class="contact">
+    <div class="container">
+      <div class="section-header">
+        <h2>Get In Touch</h2>
+        <p>Ready to book your coastal getaway?</p>
+      </div>
+      <div class="contact-content">
+        <div class="contact-info">
+          <div class="contact-item">
+            <div class="contact-icon">
+              <i class="fas fa-phone"></i>
+            </div>
+            <div class="contact-details">
+              <h4>Phone / WhatsApp</h4>
+              <a href="tel:+254799466723">+254 799 466 723</a>
+            </div>
+          </div>
+          <div class="contact-item">
+            <div class="contact-icon">
+              <i class="fas fa-envelope"></i>
+            </div>
+            <div class="contact-details">
+              <h4>Email</h4>
+              <a href="mailto:gonahhomes0@gmail.com">gonahhomes0@gmail.com</a>
+            </div>
+          </div>
+          <div class="contact-item">
+            <div class="contact-icon">
+              <i class="fas fa-map-marker-alt"></i>
+            </div>
+            <div class="contact-details">
+              <h4>Location</h4>
+              <span>Mombasa, Kenya</span>
+            </div>
+          </div>
+        </div>
+        <div class="contact-form-wrapper">
+          <form class="contact-form" id="contact-form">
+            <div class="form-group">
+              <label for="contact-name">Your Name</label>
+              <input type="text" id="contact-name" required>
+            </div>
+            <div class="form-group">
+              <label for="contact-email">Email Address</label>
+              <input type="email" id="contact-email" required>
+            </div>
+            <div class="form-group">
+              <label for="contact-message">Message</label>
+              <textarea id="contact-message" rows="5" placeholder="How can we help you?" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-paper-plane"></i> Send Message
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-section">
+          <h3>Gonah Homes</h3>
+          <p>Your premium home away from home on the Kenyan coast.</p>
+        </div>
+        <div class="footer-section">
+          <h4>Quick Links</h4>
+          <ul>
+            <li><a href="#accommodations">Accommodations</a></li>
+            <li><a href="policies.html">Policies</a></li>
+            <li><a href="local_recommendations.html">Local Guide</a></li>
+            <li><a href="blog.html">Blog</a></li>
+          </ul>
+        </div>
+        <div class="footer-section">
+          <h4>Contact</h4>
+          <ul>
+            <li><i class="fas fa-phone"></i> +254 799 466 723</li>
+            <li><i class="fas fa-envelope"></i> gonahhomes0@gmail.com</li>
+            <li><i class="fas fa-map-marker-alt"></i> Mombasa, Kenya</li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2025 Gonah Homes. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
   <!-- Booking Modal -->
-  <div id="bookingModal" class="modal">
-    <div class="modal-content">
-      <span class="close-btn">&times;</span>
-      <h2>Book Your Stay</h2>
-      <form id="bookingForm">
-        <label>Full Name:</label>
-        <input type="text" id="guestName" required>
+  <div id="booking-modal-bg" class="modal-backdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Book Your Stay</h3>
+        <button class="modal-close" onclick="closeBookingModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="booking-form">
+          <input type="hidden" id="booking-house" name="house" value="">
 
-        <label>Email Address:</label>
-        <input type="email" id="guestEmail" required>
+          <div class="form-group">
+            <label for="booking-name">
+              <i class="fas fa-user"></i> Full Name
+            </label>
+            <input type="text" id="booking-name" name="name" required>
+          </div>
 
-        <label>Room Type:</label>
-        <input type="text" id="roomType" readonly>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="booking-guests">
+                <i class="fas fa-users"></i> Number of Guests
+              </label>
+              <input type="number" id="booking-guests" name="guests" min="1" required>
+            </div>
+            <div class="form-group">
+              <label for="booking-phone">
+                <i class="fas fa-phone"></i> Phone / WhatsApp
+              </label>
+              <input type="tel" id="booking-phone" name="phone" required>
+            </div>
+          </div>
 
-        <label>Check-In Date:</label>
-        <input type="text" id="checkIn" class="date-picker" placeholder="Select date" required>
+          <div class="form-group">
+            <label for="booking-email">
+              <i class="fas fa-envelope"></i> Email Address
+            </label>
+            <input type="email" id="booking-email" name="email" required>
+          </div>
 
-        <label>Check-Out Date:</label>
-        <input type="text" id="checkOut" class="date-picker" placeholder="Select date" required>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="booking-checkin">
+                <i class="fas fa-calendar"></i> Check-In Date
+              </label>
+              <input type="date" id="booking-checkin" name="checkin" required>
+            </div>
+            <div class="form-group">
+              <label for="booking-checkout">
+                <i class="fas fa-calendar"></i> Check-Out Date
+              </label>
+              <input type="date" id="booking-checkout" name="checkout" required>
+            </div>
+          </div>
 
-        <label>Preferred Check-In Time:</label>
-        <input type="text" id="checkInTime" class="time-picker" placeholder="Select time" required>
+          <div class="form-group">
+            <label for="booking-access">
+              <i class="fas fa-wheelchair"></i> Accessibility Needs (Optional)
+            </label>
+            <textarea id="booking-access" name="access" rows="2" placeholder="e.g. wheelchair access, hearing impaired, etc."></textarea>
+          </div>
 
-        <button type="submit" class="submit-btn">Confirm Booking</button>
-      </form>
+          <div class="form-group">
+            <label for="booking-requests">
+              <i class="fas fa-sticky-note"></i> Special Requests (Optional)
+            </label>
+            <textarea id="booking-requests" name="requests" rows="2" placeholder="e.g. Early check-in, allergies, etc."></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-full">
+            <i class="fas fa-calendar-check"></i> Complete Booking
+          </button>
+        </form>
+
+        <div id="booking-confirm" class="booking-success" style="display: none;">
+          <div class="success-icon">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <h3>Booking Request Submitted!</h3>
+          <p>Thank you for choosing Gonah Homes! Your booking request has been successfully submitted.</p>
+          <div class="booking-details" id="booking-details"></div>
+          <div class="payment-info">
+            <h4><i class="fas fa-credit-card"></i> Payment Information</h4>
+            <p>To confirm your booking, please pay the booking fee to:</p>
+            <div class="mpesa-info">
+              <strong>M-Pesa Number: 0799466723</strong>
+            </div>
+            <p>After payment, you will be contacted for confirmation. We look forward to hosting you!</p>
+          </div>
+          <button class="btn btn-outline" onclick="closeBookingModal()">Close</button>
+        </div>
+      </div>
     </div>
   </div>
 
-  <footer>
-    <p>&copy; 2025 Gonah Homes | All rights reserved</p>
-  </footer>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-  <!-- Scripts -->
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <!-- EmailJS SDK (consistent CDN) -->
   <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
-  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
-  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js"></script>
-  
-  <script>
-    // Booking modal logic
-    const modal = document.getElementById('bookingModal');
-    const closeBtn = document.querySelector('.close-btn');
-    const bookButtons = document.querySelectorAll('.book-btn');
-    const roomInput = document.getElementById('roomType');
-
-    bookButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        modal.style.display = 'flex';
-        roomInput.value = btn.getAttribute('data-room');
-      });
-    });
-
-    closeBtn.addEventListener('click', () => {
-      modal.style.display = 'none';
-    });
-
-    window.addEventListener('click', (e) => {
-      if (e.target === modal) modal.style.display = 'none';
-    });
-
-    // Flatpickr initialization
-    flatpickr(".date-picker", {
-      dateFormat: "Y-m-d",
-      minDate: "today"
-    });
-
-    flatpickr(".time-picker", {
-      enableTime: true,
-      noCalendar: true,
-      dateFormat: "H:i",
-      time_24hr: true
-    });
-
-    // Form submission placeholder (EmailJS + Firebase ready)
-    const form = document.getElementById('bookingForm');
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      alert('Booking submitted! You can now connect EmailJS and Firebase here.');
-      modal.style.display = 'none';
-    });
-  </script>
+  <!-- Site JS -->
+  <script src="script.js"></script>
+  <script src="notification-service.js"></script>
 </body>
 </html>
